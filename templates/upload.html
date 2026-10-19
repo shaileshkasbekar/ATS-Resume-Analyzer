@@ -1,57 +1,64 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
+{% block title %}ATS Analysis{% endblock %}
 
-    <title>Upload Resume</title>
+{% block content %}
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/upload.css') }}">
+<div class="page-head">
+    <div>
+        <span class="eyebrow">ATS analysis</span>
+        <h1>Check your resume for a job role</h1>
+        <p>Choose the role you are applying for and upload your resume as a PDF.</p>
+    </div>
+</div>
 
-</head>
+<div class="upload-layout">
 
-<body>
+    <form method="POST" enctype="multipart/form-data" class="card" data-loading>
 
-{% include "_flash.html" %}
+        <div class="field">
+            <label for="role_id">Job role</label>
+            <select class="input" id="role_id" name="role_id" required>
+                <option value="" disabled selected>Select a job role…</option>
+                {% for role in job_roles %}
+                <option value="{{ role.role_id }}">{{ role.role_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-<div class="upload-container">
+        <div class="field">
+            <label>Resume (PDF, max 5 MB)</label>
+            <div class="dropzone">
+                <input type="file" name="resume" accept=".pdf" required>
+                <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <strong>Drag and drop your resume here</strong>
+                <span class="muted small">or click to browse</span>
+                <span class="dropzone-file"></span>
+            </div>
+        </div>
 
-    <h1>ATS Resume Analyzer</h1>
-
-    <h2>Upload Resume</h2>
-
-    <form method="POST" enctype="multipart/form-data">
-
-        <label>Select Job Role</label>
-
-        <select name="role_id">
-
-            {% for role in job_roles %}
-
-            <option value="{{ role.role_id }}">
-                {{ role.role_name }}
-            </option>
-
-            {% endfor %}
-
-        </select>
-
-        <label>Select Resume (PDF)</label>
-
-        <input type="file" name="resume" accept=".pdf" required>
-
-        <input type="submit" value="Analyze Resume">
+        <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+            Analyze resume
+        </button>
 
     </form>
 
-    <br>
-
-    <a href="/dashboard">
-        <button class="back-btn">← Back to Dashboard</button>
-    </a>
+    <aside class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-circle-info"></i> What you get</h2>
+        </div>
+        <ul class="list list-tip">
+            <li><i class="fa-solid fa-gauge-high"></i><span>An ATS score from rule-based matching combined with AI review</span></li>
+            <li><i class="fa-solid fa-layer-group"></i><span>A score for each skill group of the role</span></li>
+            <li><i class="fa-solid fa-circle-check"></i><span>Skills you match and important skills you are missing</span></li>
+            <li><i class="fa-solid fa-brain"></i><span>AI feedback on your experience and projects</span></li>
+        </ul>
+        <p class="muted small" style="margin-top: 16px;">
+            Use a text-based PDF. Scanned images cannot be read.
+        </p>
+    </aside>
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

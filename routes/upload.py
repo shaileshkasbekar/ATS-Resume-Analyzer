@@ -938,7 +938,9 @@ def upload_resume():
 
             weaknesses=weaknesses,
 
-            ai_recommendations=ai_recommendations
+            ai_recommendations=ai_recommendations,
+
+            filename=filename
         )
 
 

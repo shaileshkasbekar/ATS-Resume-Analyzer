@@ -1,499 +1,193 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
+{% from "_macros.html" import ring, meter, chips, icon_list, verdict, level %}
 
-    <meta charset="UTF-8">
+{% block title %}ATS Result{% endblock %}
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+{% block content %}
 
-    <title>ATS Resume Analyzer</title>
+<div class="page-head">
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/result.css') }}">
-
-</head>
-
-
-<body>
-
-{% include "_flash.html" %}
-
-<div class="container">
-
-
-    <!-- ================================= -->
-    <!-- PAGE TITLE -->
-    <!-- ================================= -->
-
-    <h1>ATS Resume Analyzer</h1>
-
-
-    <!-- ================================= -->
-    <!-- FINAL ATS SCORE -->
-    <!-- ================================= -->
-
-    <div class="score">
-
-        <h2>Your ATS Score</h2>
-
-        <h1>{{ ats_score }}%</h1>
-
-
-        <div class="progress">
-
-            <div class="progress-bar"
-                 style="width: {{ ats_score }}%;">
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- DETECTED TECHNOLOGY PATH -->
-    <!-- ================================= -->
-
-    <div class="card technology-card">
-
-        <h2>🔍 Detected Technology Path</h2>
-
-
-        {% if detected_path %}
-
-            <h3>{{ detected_path }}</h3>
-
-            <p>
-                This is the strongest technology path
-                detected from your resume for the selected
-                job role.
-            </p>
-
-        {% else %}
-
-            <p>
-                No specific technology path could be detected.
-            </p>
-
+    <div>
+        <span class="eyebrow">ATS analysis result</span>
+        <h1>Your ATS report</h1>
+        {% if filename %}
+        <p><i class="fa-regular fa-file-pdf"></i> {{ filename }}</p>
         {% endif %}
-
     </div>
 
-
-    <!-- ================================= -->
-    <!-- AI ANALYSIS SUMMARY -->
-    <!-- ================================= -->
-
-    <div class="card">
-
-        <h2>🤖 AI Resume Analysis</h2>
-
-
-        <div class="ai-score-container">
-
-
-            <div class="ai-score-box">
-
-                <h3>AI Relevance</h3>
-
-                <strong>
-                    {{ ai_relevance }}%
-                </strong>
-
-            </div>
-
-
-            <div class="ai-score-box">
-
-                <h3>Experience Relevance</h3>
-
-                <strong>
-                    {{ experience_relevance }}%
-                </strong>
-
-            </div>
-
-
-            <div class="ai-score-box">
-
-                <h3>Project Relevance</h3>
-
-                <strong>
-                    {{ project_relevance }}%
-                </strong>
-
-            </div>
-
-
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- SKILL GROUP ANALYSIS -->
-    <!-- ================================= -->
-
-    <div class="card">
-
-        <h2>📊 Skill Group Analysis</h2>
-
-
-        <div class="group-container">
-
-
-            {% for group_name, group in group_results.items() %}
-
-                <div class="group-card">
-
-
-                    <div class="group-header">
-
-                        <h3>
-                            {{ group_name }}
-                        </h3>
-
-                        <strong>
-                            {{ group.score }}%
-                        </strong>
-
-                    </div>
-
-
-                    <!-- Group Progress -->
-
-                    <div class="group-progress">
-
-                        <div class="group-progress-bar"
-                             style="width: {{ group.score }}%;">
-                        </div>
-
-                    </div>
-
-
-                    <!-- Matched Group Skills -->
-
-                    {% if group.matched_skills %}
-
-                        <p class="group-title">
-                            Matched
-                        </p>
-
-                        <ul>
-
-                            {% for skill in group.matched_skills %}
-
-                                <li class="matched-text">
-                                    ✅ {{ skill }}
-                                </li>
-
-                            {% endfor %}
-
-                        </ul>
-
-                    {% endif %}
-
-
-                    <!-- Missing Group Skills -->
-
-                    {% if group.missing_skills %}
-
-                        <p class="group-title">
-                            Missing
-                        </p>
-
-                        <ul>
-
-                            {% for skill in group.missing_skills %}
-
-                                <li class="missing-text">
-                                    ❌ {{ skill }}
-                                </li>
-
-                            {% endfor %}
-
-                        </ul>
-
-                    {% endif %}
-
-
-                </div>
-
-            {% endfor %}
-
-
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- MATCHED SKILLS -->
-    <!-- ================================= -->
-
-    <div class="card matched">
-
-        <h3>✅ Matched Skills</h3>
-
-
-        {% if matched_skills %}
-
-            <ul>
-
-                {% for skill in matched_skills %}
-
-                    <li>
-                        {{ skill }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                No matching skills detected.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- SEMANTIC MATCHES -->
-    <!-- ================================= -->
-
-    <div class="card semantic">
-
-        <h3>🧠 Semantic Skill Matches</h3>
-
-
-        {% if semantic_matches %}
-
-            <ul>
-
-                {% for match in semantic_matches %}
-
-                    <li>
-                        {{ match }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                No additional semantic matches detected.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- MISSING IMPORTANT SKILLS -->
-    <!-- ================================= -->
-
-    <div class="card missing">
-
-        <h3>❌ Missing Important Skills</h3>
-
-
-        {% if missing_skills %}
-
-            <ul>
-
-                {% for skill in missing_skills %}
-
-                    <li>
-                        {{ skill }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                🎉 No important skills are missing.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- STRENGTHS -->
-    <!-- ================================= -->
-
-    <div class="card strengths">
-
-        <h3>💪 Resume Strengths</h3>
-
-
-        {% if strengths %}
-
-            <ul>
-
-                {% for strength in strengths %}
-
-                    <li>
-                        ✅ {{ strength }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                No specific strengths detected.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- WEAKNESSES -->
-    <!-- ================================= -->
-
-    <div class="card weaknesses">
-
-        <h3>⚠️ Areas to Improve</h3>
-
-
-        {% if weaknesses %}
-
-            <ul>
-
-                {% for weakness in weaknesses %}
-
-                    <li>
-                        {{ weakness }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                No major weaknesses detected.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- RULE BASED RECOMMENDATIONS -->
-    <!-- ================================= -->
-
-    <div class="card recommend">
-
-        <h3>💡 Recommended Skills</h3>
-
-
-        {% if recommended_skills %}
-
-            <ul>
-
-                {% for skill in recommended_skills %}
-
-                    <li>
-                        {{ skill }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                🎉 Your resume covers the important
-                skills for this role.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- AI RECOMMENDATIONS -->
-    <!-- ================================= -->
-
-    <div class="card ai-recommend">
-
-        <h3>🤖 AI Recommendations</h3>
-
-
-        {% if ai_recommendations %}
-
-            <ul>
-
-                {% for recommendation in ai_recommendations %}
-
-                    <li>
-                        {{ recommendation }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                🎉 No additional AI recommendations.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- BUTTONS -->
-    <!-- ================================= -->
-
-    <div class="buttons">
-
-        <a href="/upload"
-           class="btn upload">
-
-            Upload Another Resume
-
+    <div class="actions">
+        <a href="/history" class="btn btn-ghost">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
         </a>
-
-
-        <a href="/dashboard"
-           class="btn dashboard">
-
-            Dashboard
-
+        <a href="/upload" class="btn btn-primary">
+            <i class="fa-solid fa-rotate"></i> Analyze another
         </a>
-
     </div>
-
 
 </div>
 
-</body>
 
-</html>
+<div class="stack">
+
+    <!-- ================= SCORE ================= -->
+
+    <div class="card hero">
+
+        {{ ring(ats_score, "ATS score") }}
+
+        <div class="hero-body">
+
+            <h2>{{ verdict(ats_score) }}</h2>
+
+            <p>
+                {% if detected_path %}
+                Detected technology path:
+                <span class="badge tint-primary">
+                    <i class="fa-solid fa-route"></i> {{ detected_path }}
+                </span>
+                {% else %}
+                No specific technology path was detected.
+                {% endif %}
+            </p>
+
+            {{ meter("AI relevance", ai_relevance) }}
+            {{ meter("Experience relevance", experience_relevance) }}
+            {{ meter("Project relevance", project_relevance) }}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= SKILLS ================= -->
+
+    <div class="grid grid-2">
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-circle-check"></i> Matched skills</h2>
+                <span class="badge tint-good">{{ matched_skills|length }}</span>
+            </div>
+            {{ chips(matched_skills, "good", "fa-check", "No matching skills detected.") }}
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-circle-xmark"></i> Missing important skills</h2>
+                <span class="badge tint-low">{{ missing_skills|length }}</span>
+            </div>
+            {{ chips(missing_skills, "low", "fa-xmark", "🎉 No important skills are missing.") }}
+        </div>
+
+    </div>
+
+    {% if semantic_matches %}
+    <div class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-brain"></i> Related skills found by AI</h2>
+        </div>
+        <p class="muted small" style="margin-bottom: 12px;">
+            Skills that are not an exact keyword match, but the AI found related experience.
+        </p>
+        {{ chips(semantic_matches, "info") }}
+    </div>
+    {% endif %}
+
+
+    <!-- ================= SKILL GROUPS ================= -->
+
+    {% if group_results %}
+    <div class="card">
+
+        <div class="card-head">
+            <h2><i class="fa-solid fa-layer-group"></i> Skill group breakdown</h2>
+        </div>
+
+        <div class="grid grid-2">
+
+            {% for group_name, group in group_results.items() %}
+
+            <div class="group">
+
+                <div class="group-head">
+                    <h3>{{ group_name }}</h3>
+                    <span class="badge tint-{{ level(group.score) }}">
+                        {{ "%.0f"|format((group.score or 0)|float) }}%
+                    </span>
+                </div>
+
+                <div class="meter-track">
+                    <div class="meter-fill {{ level(group.score) }}"
+                         style="width: {{ (group.score or 0)|float }}%"></div>
+                </div>
+
+                {% if group.matched_skills %}
+                {{ chips(group.matched_skills, "good", "fa-check") }}
+                {% endif %}
+
+                {% if group.missing_skills %}
+                {{ chips(group.missing_skills, "low", "fa-xmark") }}
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+    {% endif %}
+
+
+    <!-- ================= STRENGTHS / WEAKNESSES ================= -->
+
+    <div class="grid grid-2">
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-thumbs-up"></i> Strengths</h2>
+            </div>
+            {{ icon_list(strengths, "good", "fa-circle-check", "No specific strengths detected.") }}
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> Areas to improve</h2>
+            </div>
+            {{ icon_list(weaknesses, "low", "fa-circle-exclamation", "No major weaknesses detected.") }}
+        </div>
+
+    </div>
+
+
+    <!-- ================= RECOMMENDATIONS ================= -->
+
+    <div class="card">
+
+        <div class="card-head">
+            <h2><i class="fa-solid fa-lightbulb"></i> Recommendations</h2>
+        </div>
+
+        {% if recommended_skills or ai_recommendations %}
+
+        <ul class="list list-tip">
+            {% for item in recommended_skills %}
+            <li><i class="fa-solid fa-arrow-right"></i><span>{{ item }}</span></li>
+            {% endfor %}
+            {% for item in ai_recommendations %}
+            {% if item not in recommended_skills %}
+            <li><i class="fa-solid fa-wand-magic-sparkles"></i><span>{{ item }}</span></li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+
+        {% else %}
+        <p class="empty">🎉 Your resume covers the important skills for this role.</p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

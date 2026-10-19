@@ -1,594 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
+{% from "_macros.html" import ring, meter, chips, icon_list, check, verdict %}
 
-    <meta charset="UTF-8">
+{% block title %}General Result{% endblock %}
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+{% block content %}
 
-    <title>General Resume Analysis</title>
+<div class="page-head">
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/general_result.css') }}">
+    <div>
+        <span class="eyebrow">General analysis result</span>
+        <h1>Your resume quality report</h1>
+        {% if filename %}
+        <p><i class="fa-regular fa-file-pdf"></i> {{ filename }}</p>
+        {% endif %}
+    </div>
 
-</head>
+    <div class="actions">
+        <a href="/history" class="btn btn-ghost">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
+        </a>
+        <a href="/general-analyzer" class="btn btn-primary">
+            <i class="fa-solid fa-rotate"></i> Analyze another
+        </a>
+    </div>
 
-<body>
-
-{% include "_flash.html" %}
-
-<div class="container">
-
-    <h1>General Resume Analysis</h1>
-
-    <p class="filename">
-        Resume: {{ filename }}
-    </p>
+</div>
 
 
-    <!-- ================================= -->
-    <!-- FINAL SCORE -->
-    <!-- ================================= -->
+<div class="stack">
 
-    <div class="score">
+    <!-- ================= SCORE ================= -->
 
-        <h2>General Resume Score</h2>
+    <div class="card hero">
 
-        <div class="score-number">
-            {{ result.score }}%
-        </div>
+        {{ ring(result.score, "Quality") }}
 
-        <div class="progress">
+        <div class="hero-body">
+            <h2>{{ verdict(result.score) }}</h2>
+            <p>Your score combines basic resume checks with an AI quality review.</p>
 
-            <div class="progress-bar"
-                 style="width: {{ result.score }}%;">
-            </div>
-
+            {% if result.rule_score is defined %}
+            {{ meter("Basic checks (rule-based)", result.rule_score) }}
+            {% endif %}
+            {{ meter("AI resume quality", result.ai_quality) }}
         </div>
 
     </div>
 
 
-    <!-- ================================= -->
-    <!-- SCORE BREAKDOWN -->
-    <!-- ================================= -->
-
-    <div class="card score-breakdown">
-
-        <h2>📊 Score Breakdown</h2>
-
-        <div class="score-grid">
-
-            <div class="score-box">
-
-                <h3>Rule-Based Score</h3>
-
-                <strong>
-                    {{ result.rule_score }}%
-                </strong>
-
-                <p>
-                    Based on resume structure,
-                    contact information, sections,
-                    skills and basic checks.
-                </p>
-
-            </div>
-
-
-            <div class="score-box">
-
-                <h3>AI Resume Quality</h3>
-
-                <strong>
-                    {{ result.ai_quality }}%
-                </strong>
-
-                <p>
-                    AI evaluation of the overall
-                    quality of your resume.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- AI QUALITY ANALYSIS -->
-    <!-- ================================= -->
+    <!-- ================= AI BREAKDOWN ================= -->
 
     <div class="card">
 
-        <h2>🤖 AI Resume Quality Analysis</h2>
+        <div class="card-head">
+            <h2><i class="fa-solid fa-brain"></i> AI quality breakdown</h2>
+        </div>
 
-        <div class="ai-score-grid">
-
-
-            <div class="ai-score-box">
-
-                <h3>Summary</h3>
-
-                <strong>
-                    {{ result.summary_quality }}%
-                </strong>
-
+        <div class="grid grid-2">
+            <div>
+                {{ meter("Summary", result.summary_quality) }}
+                {{ meter("Experience", result.experience_quality) }}
+                {{ meter("Projects", result.project_quality) }}
             </div>
-
-
-            <div class="ai-score-box">
-
-                <h3>Experience</h3>
-
-                <strong>
-                    {{ result.experience_quality }}%
-                </strong>
-
+            <div>
+                {{ meter("Skills", result.skills_quality) }}
+                {{ meter("Clarity", result.clarity_quality) }}
             </div>
-
-
-            <div class="ai-score-box">
-
-                <h3>Projects</h3>
-
-                <strong>
-                    {{ result.project_quality }}%
-                </strong>
-
-            </div>
-
-
-            <div class="ai-score-box">
-
-                <h3>Skills</h3>
-
-                <strong>
-                    {{ result.skills_quality }}%
-                </strong>
-
-            </div>
-
-
-            <div class="ai-score-box">
-
-                <h3>Clarity</h3>
-
-                <strong>
-                    {{ result.clarity_quality }}%
-                </strong>
-
-            </div>
-
         </div>
 
     </div>
 
 
-    <!-- ================================= -->
-    <!-- AI STRENGTHS -->
-    <!-- ================================= -->
+    <!-- ================= STRENGTHS / WEAKNESSES ================= -->
 
-    <div class="card strengths">
+    <div class="grid grid-2">
 
-        <h2>💪 AI Detected Strengths</h2>
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-thumbs-up"></i> Strengths</h2>
+            </div>
+            {{ icon_list(result.ai_strengths, "good", "fa-circle-check", "No specific strengths detected.") }}
+        </div>
 
-        {% if result.ai_strengths %}
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> Weaknesses</h2>
+            </div>
+            {{ icon_list(result.ai_weaknesses, "low", "fa-circle-exclamation", "No major weaknesses detected.") }}
+        </div>
 
-            <ul>
+    </div>
 
-                {% for strength in result.ai_strengths %}
 
-                    <li>
-                        {{ strength }}
-                    </li>
+    <!-- ================= CHECKLIST ================= -->
 
-                {% endfor %}
+    <div class="grid grid-3">
 
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-address-card"></i> Contact &amp; profiles</h2>
+            </div>
+            <ul class="list check-list">
+                {{ check(result.email, "Email found", "Email missing") }}
+                {{ check(result.phone, "Phone number found", "Phone number missing") }}
+                {{ check(result.linkedin, "LinkedIn profile found", "LinkedIn profile missing") }}
+                {{ check(result.github, "GitHub profile found", "GitHub profile missing") }}
             </ul>
+        </div>
 
-        {% else %}
-
-            <p>
-                No specific strengths detected.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- AI WEAKNESSES -->
-    <!-- ================================= -->
-
-    <div class="card weaknesses">
-
-        <h2>⚠️ AI Detected Weaknesses</h2>
-
-        {% if result.ai_weaknesses %}
-
-            <ul>
-
-                {% for weakness in result.ai_weaknesses %}
-
-                    <li>
-                        {{ weakness }}
-                    </li>
-
-                {% endfor %}
-
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-list-check"></i> Main sections</h2>
+            </div>
+            <ul class="list check-list">
+                {{ check(result.sections.skills, "Skills", "Skills section missing") }}
+                {{ check(result.sections.education, "Education", "Education section missing") }}
+                {{ check(result.sections.experience, "Experience", "Experience section missing") }}
+                {{ check(result.sections.projects, "Projects", "Projects section missing") }}
             </ul>
-
-        {% else %}
-
-            <p>
-                No major weaknesses detected.
-            </p>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- CONTACT INFORMATION -->
-    <!-- ================================= -->
-
-    <div class="cards-container">
-
-
-        <div class="card">
-
-            <h2>Contact Information</h2>
-
-            <p>
-
-                {% if result.email %}
-
-                    ✅ Email detected
-
-                {% else %}
-
-                    ❌ Email not detected
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.phone %}
-
-                    ✅ Phone number detected
-
-                {% else %}
-
-                    ❌ Phone number not detected
-
-                {% endif %}
-
-            </p>
-
         </div>
 
-
-        <!-- ================================= -->
-        <!-- RESUME SECTIONS -->
-        <!-- ================================= -->
-
         <div class="card">
-
-            <h2>Resume Sections</h2>
-
-            <p>
-
-                {% if result.sections.skills %}
-
-                    ✅ Skills section detected
-
-                {% else %}
-
-                    ❌ Skills section missing
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.sections.education %}
-
-                    ✅ Education section detected
-
-                {% else %}
-
-                    ❌ Education section missing
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.sections.experience %}
-
-                    ✅ Experience section detected
-
-                {% else %}
-
-                    ❌ Experience section missing
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.sections.projects %}
-
-                    ✅ Projects section detected
-
-                {% else %}
-
-                    ❌ Projects section missing
-
-                {% endif %}
-
-            </p>
-
-        </div>
-
-
-        <!-- ================================= -->
-        <!-- ADDITIONAL SECTIONS -->
-        <!-- ================================= -->
-
-        <div class="card">
-
-            <h2>Additional Sections</h2>
-
-            <p>
-
-                {% if result.sections.summary %}
-
-                    ✅ Professional Summary detected
-
-                {% else %}
-
-                    ❌ Professional Summary missing
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.sections.certifications %}
-
-                    ✅ Certifications detected
-
-                {% else %}
-
-                    ❌ Certifications missing
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.sections.achievements %}
-
-                    ✅ Achievements detected
-
-                {% else %}
-
-                    ❌ Achievements missing
-
-                {% endif %}
-
-            </p>
-
-        </div>
-
-
-        <!-- ================================= -->
-        <!-- ONLINE PROFILES -->
-        <!-- ================================= -->
-
-        <div class="card">
-
-            <h2>Online Profiles</h2>
-
-            <p>
-
-                {% if result.linkedin %}
-
-                    ✅ LinkedIn profile detected
-
-                {% else %}
-
-                    ❌ LinkedIn profile not detected
-
-                {% endif %}
-
-            </p>
-
-
-            <p>
-
-                {% if result.github %}
-
-                    ✅ GitHub profile detected
-
-                {% else %}
-
-                    ❌ GitHub profile not detected
-
-                {% endif %}
-
-            </p>
-
-        </div>
-
-
-        <!-- ================================= -->
-        <!-- RESUME CONTENT -->
-        <!-- ================================= -->
-
-        <div class="card">
-
-            <h2>Resume Content</h2>
-
-            <p>
-
-                Word Count:
-
-                <strong>
-                    {{ result.word_count }}
-                </strong>
-
-            </p>
-
-        </div>
-
-
-        <!-- ================================= -->
-        <!-- DETECTED SKILLS -->
-        <!-- ================================= -->
-
-        <div class="card">
-
-            <h2>Detected Skills</h2>
-
-            {% if result.skills %}
-
-                <ul class="skills-list">
-
-                    {% for skill in result.skills %}
-
-                        <li>
-                            {{ skill }}
-                        </li>
-
-                    {% endfor %}
-
-                </ul>
-
-            {% else %}
-
-                <p>
-                    No technical skills detected.
-                </p>
-
-            {% endif %}
-
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- AI RECOMMENDATIONS -->
-    <!-- ================================= -->
-
-    <div class="card ai-recommendations">
-
-        <h2>🤖 AI Recommendations</h2>
-
-        {% if result.ai_recommendations %}
-
-            <ul>
-
-                {% for recommendation in result.ai_recommendations %}
-
-                    <li>
-                        {{ recommendation }}
-                    </li>
-
-                {% endfor %}
-
+            <div class="card-head">
+                <h2><i class="fa-solid fa-plus"></i> Extra sections</h2>
+            </div>
+            <ul class="list check-list">
+                {{ check(result.sections.summary, "Professional summary", "Professional summary missing") }}
+                {{ check(result.sections.certifications, "Certifications", "Certifications missing") }}
+                {{ check(result.sections.achievements, "Achievements", "Achievements missing") }}
             </ul>
-
-        {% else %}
-
-            <p>
-                ✅ No major AI recommendations.
+            <p class="muted small" style="margin-top: 14px;">
+                Word count: <strong>{{ result.word_count }}</strong>
             </p>
-
-        {% endif %}
+        </div>
 
     </div>
 
 
-    <!-- ================================= -->
-    <!-- GENERAL RECOMMENDATIONS -->
-    <!-- ================================= -->
+    <!-- ================= SKILLS ================= -->
 
-    <div class="card recommendations">
+    <div class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-code"></i> Skills found in your resume</h2>
+            <span class="badge tint-primary">{{ result.skills|length }}</span>
+        </div>
+        {{ chips(result.skills, "primary", "", "No technical skills detected.") }}
+    </div>
 
-        <h2>💡 General Recommendations</h2>
+
+    <!-- ================= RECOMMENDATIONS ================= -->
+
+    <div class="card">
+
+        <div class="card-head">
+            <h2><i class="fa-solid fa-lightbulb"></i> Recommendations</h2>
+        </div>
 
         {% if result.recommendations %}
-
-            <ul>
-
-                {% for recommendation in result.recommendations %}
-
-                    <li>
-                        {{ recommendation }}
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
+        <ul class="list list-tip">
+            {% for item in result.recommendations %}
+            <li><i class="fa-solid fa-arrow-right"></i><span>{{ item }}</span></li>
+            {% endfor %}
+        </ul>
         {% else %}
-
-            <p>
-                ✅ Your resume meets all the basic checks.
-            </p>
-
+        <p class="empty">✅ Your resume meets all the basic checks.</p>
         {% endif %}
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- BUTTONS -->
-    <!-- ================================= -->
-
-    <div class="buttons">
-
-        <a href="/general-analyzer"
-           class="btn analyze">
-
-            Analyze Another Resume
-
-        </a>
-
-
-        <a href="/dashboard"
-           class="btn dashboard">
-
-            Dashboard
-
-        </a>
 
     </div>
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

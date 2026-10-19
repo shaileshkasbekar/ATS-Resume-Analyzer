@@ -1,0 +1,95 @@
+{# Reusable pieces for the result pages #}
+
+
+{# good / ok / low colour for a 0-100 score #}
+
+{% macro level(score) -%}
+    {%- set s = (score or 0)|float -%}
+    {%- if s >= 75 -%}good{%- elif s >= 50 -%}ok{%- else -%}low{%- endif -%}
+{%- endmacro %}
+
+
+{# Short verdict text for a 0-100 score #}
+
+{% macro verdict(score) -%}
+    {%- set s = (score or 0)|float -%}
+    {%- if s >= 75 -%}Strong match
+    {%- elif s >= 50 -%}Good start, needs some work
+    {%- else -%}Needs improvement
+    {%- endif -%}
+{%- endmacro %}
+
+
+{# Circular score ring #}
+
+{% macro ring(score, label="", small=false) -%}
+<div class="ring {{ level(score) }}{% if small %} ring-sm{% endif %}"
+     style="--value: {{ (score or 0)|float }}">
+    <div class="ring-inner">
+        <strong>{{ "%.0f"|format((score or 0)|float) }}<small>%</small></strong>
+        {% if label %}<span>{{ label }}</span>{% endif %}
+    </div>
+</div>
+{%- endmacro %}
+
+
+{# Horizontal progress bar with label #}
+
+{% macro meter(label, score) -%}
+<div class="meter">
+    <div class="meter-head">
+        <span>{{ label }}</span>
+        <strong>{{ "%.0f"|format((score or 0)|float) }}%</strong>
+    </div>
+    <div class="meter-track">
+        <div class="meter-fill {{ level(score) }}"
+             style="width: {{ (score or 0)|float }}%"></div>
+    </div>
+</div>
+{%- endmacro %}
+
+
+{# List of skill chips #}
+
+{% macro chips(items, kind="", icon="", empty_text="None") -%}
+{% if items %}
+<div class="chips">
+    {% for item in items %}
+    <span class="chip{% if kind %} chip-{{ kind }}{% endif %}">
+        {% if icon %}<i class="fa-solid {{ icon }}"></i>{% endif %}
+        {{ item }}
+    </span>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty">{{ empty_text }}</p>
+{% endif %}
+{%- endmacro %}
+
+
+{# Bullet list with an icon #}
+
+{% macro icon_list(items, kind, icon, empty_text="Nothing to show.") -%}
+{% if items %}
+<ul class="list list-{{ kind }}">
+    {% for item in items %}
+    <li><i class="fa-solid {{ icon }}"></i><span>{{ item }}</span></li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="empty">{{ empty_text }}</p>
+{% endif %}
+{%- endmacro %}
+
+
+{# One yes/no line in a checklist #}
+
+{% macro check(ok, yes_text, no_text) -%}
+<li>
+    {% if ok %}
+    <i class="fa-solid fa-circle-check"></i><span>{{ yes_text }}</span>
+    {% else %}
+    <i class="fa-solid fa-circle-xmark"></i><span>{{ no_text }}</span>
+    {% endif %}
+</li>
+{%- endmacro %}

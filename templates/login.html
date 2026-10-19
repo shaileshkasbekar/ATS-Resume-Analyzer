@@ -1,44 +1,58 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <title>Login</title>
+{% block title %}Login{% endblock %}
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/login.css') }}">
-</head>
+{% block body %}
 
-<body>
+<div class="auth">
 
-{% include "_flash.html" %}
+    {% include "_auth_side.html" %}
 
-<div class="login-container">
+    <section class="auth-main">
 
-    <h1>ATS Resume Analyzer</h1>
+        <div class="auth-card">
 
-    <h2>User Login</h2>
+            {% include "_flash.html" %}
 
-    <form method="POST">
+            <h2>Welcome back</h2>
+            <p class="sub">Log in to continue to your dashboard.</p>
 
-        <label>Email</label>
+            <form method="POST">
 
-        <input type="email" name="email" required>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <div class="input-wrap">
+                        <i class="fa-regular fa-envelope"></i>
+                        <input class="input" type="email" id="email" name="email"
+                               placeholder="you@example.com" required autofocus>
+                    </div>
+                </div>
 
-        <label>Password</label>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock"></i>
+                        <input class="input" type="password" id="password" name="password"
+                               placeholder="Your password" required>
+                    </div>
+                </div>
 
-        <input type="password" name="password" required>
+                <button type="submit" class="btn btn-primary btn-block">
+                    Log in
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
 
-        <input type="submit" value="Login">
+            </form>
 
-    </form>
+            <p class="auth-switch">
+                Don't have an account?
+                <a href="/register">Create one</a>
+            </p>
 
-    <p>
-        Don't have an account?
-        <a href="/register">Register</a>
-    </p>
+        </div>
+
+    </section>
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

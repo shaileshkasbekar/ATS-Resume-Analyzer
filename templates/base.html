@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}ATS Resume Analyzer{% endblock %} | ATS Analyzer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/app.css') }}">
+
+</head>
+
+<body>
+
+{% block body %}
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <a href="/dashboard" class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-file-circle-check"></i>
+            </div>
+            <div>
+                <strong>ATS Analyzer</strong>
+                <span>AI Resume Platform</span>
+            </div>
+        </a>
+
+        <nav class="nav">
+
+            <a href="/dashboard"
+               class="{% if request.path == '/dashboard' %}active{% endif %}">
+                <i class="fa-solid fa-chart-pie"></i>
+                Dashboard
+            </a>
+
+            <a href="/upload"
+               class="{% if request.path == '/upload' or request.path.startswith('/history/ats') %}active{% endif %}">
+                <i class="fa-solid fa-bullseye"></i>
+                ATS Analysis
+            </a>
+
+            <a href="/general-analyzer"
+               class="{% if request.path == '/general-analyzer' or request.path.startswith('/history/general') %}active{% endif %}">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                General Analyzer
+            </a>
+
+            <a href="/history"
+               class="{% if request.path == '/history' %}active{% endif %}">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                History
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+
+            <div class="user-chip">
+                <div class="avatar">
+                    {{ (session.get('fullname') or 'U')[0]|upper }}
+                </div>
+                <div style="min-width: 0;">
+                    <strong>{{ session.get('fullname', 'User') }}</strong>
+                    <span>Signed in</span>
+                </div>
+            </div>
+
+            <a href="/logout" class="logout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Logout
+            </a>
+
+        </div>
+
+    </aside>
+
+    <div class="backdrop" data-menu-toggle></div>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <div class="main">
+
+        <header class="mobile-bar">
+
+            <a href="/dashboard" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-file-circle-check"></i>
+                </div>
+                <strong>ATS Analyzer</strong>
+            </a>
+
+            <button class="icon-btn" type="button" data-menu-toggle aria-label="Open menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+        </header>
+
+        <main class="content">
+
+            {% include "_flash.html" %}
+
+            {% block content %}{% endblock %}
+
+        </main>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+<!-- ================= LOADING SCREEN ================= -->
+
+<div class="overlay" id="loading-overlay" hidden>
+    <div class="overlay-box">
+        <div class="spinner"></div>
+        <h3>Analyzing your resume…</h3>
+        <p class="muted small">
+            Reading the PDF, matching skills and running the AI review.
+            This can take up to a minute.
+        </p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>

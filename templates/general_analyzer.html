@@ -1,54 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block title %}General Analyzer{% endblock %}
 
-    <title>General Resume Analyzer</title>
+{% block content %}
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/general_analyzer.css') }}">
-</head>
+<div class="page-head">
+    <div>
+        <span class="eyebrow">General analyzer</span>
+        <h1>Check your overall resume quality</h1>
+        <p>No job role needed. Get feedback on structure, sections, clarity and content.</p>
+    </div>
+</div>
 
-<body>
+<div class="upload-layout">
 
-{% include "_flash.html" %}
+    <form method="POST" enctype="multipart/form-data" class="card" data-loading>
 
-<div class="container">
+        <div class="field">
+            <label>Resume (PDF, max 5 MB)</label>
+            <div class="dropzone">
+                <input type="file" name="resume" accept=".pdf" required>
+                <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <strong>Drag and drop your resume here</strong>
+                <span class="muted small">or click to browse</span>
+                <span class="dropzone-file"></span>
+            </div>
+        </div>
 
-    <h1>General Resume Analyzer</h1>
-
-    <p class="subtitle">
-        Analyze your resume and get a general resume quality score.
-    </p>
-
-    <form method="POST" enctype="multipart/form-data">
-
-        <label for="resume">
-            Select Resume (PDF)
-        </label>
-
-        <input
-            type="file"
-            id="resume"
-            name="resume"
-            accept=".pdf"
-            required
-        >
-
-        <button type="submit">
-            Analyze Resume
+        <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            Analyze resume
         </button>
 
     </form>
 
-    <a href="/dashboard" class="back-btn">
-        Back to Dashboard
-    </a>
+    <aside class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-circle-info"></i> What we check</h2>
+        </div>
+        <ul class="list list-tip">
+            <li><i class="fa-solid fa-address-card"></i><span>Email, phone, LinkedIn and GitHub</span></li>
+            <li><i class="fa-solid fa-list-check"></i><span>Key sections: summary, skills, education, experience, projects</span></li>
+            <li><i class="fa-solid fa-pen-nib"></i><span>AI review of summary, experience, projects and clarity</span></li>
+            <li><i class="fa-solid fa-lightbulb"></i><span>Clear recommendations to improve</span></li>
+        </ul>
+    </aside>
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

@@ -1,606 +1,150 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
+{% from "_macros.html" import ring, meter %}
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+{% block title %}Dashboard{% endblock %}
 
-    <title>Dashboard | ATS Resume Analyzer</title>
+{% block content %}
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/dashboard.css') }}">
+<div class="page-head">
 
-    <!-- Icons -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-</head>
+    <div>
+        <span class="eyebrow">Your resume workspace</span>
+        <h1>Welcome back, {{ fullname }} 👋</h1>
+        <p>Analyze your resume, find skill gaps and improve your job readiness.</p>
+    </div>
 
-<body>
-
-{% include "_flash.html" %}
-
-<div class="app-container">
-
-    <!-- ================= SIDEBAR ================= -->
-
-    <aside class="sidebar">
-
-        <div class="brand">
-            <div class="brand-icon">
-                <i class="fa-solid fa-file-circle-check"></i>
-            </div>
-
-            <div>
-                <h2>ATS Analyzer</h2>
-                <span>AI Resume Platform</span>
-            </div>
-        </div>
-
-
-        <nav class="sidebar-nav">
-
-            <a href="/dashboard" class="nav-item active">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Dashboard</span>
-            </a>
-
-            <a href="/upload" class="nav-item">
-                <i class="fa-solid fa-file-arrow-up"></i>
-                <span>ATS Analysis</span>
-            </a>
-
-            <a href="/general-analyzer" class="nav-item">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span>General Analyzer</span>
-            </a>
-
-            <a href="/history" class="nav-item">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <span>Resume History</span>
-            </a>
-
-        </nav>
-
-
-        <div class="sidebar-bottom">
-
-            <div class="sidebar-help">
-
-                <div class="help-icon">
-                    <i class="fa-solid fa-lightbulb"></i>
-                </div>
-
-                <div>
-                    <strong>Improve your resume</strong>
-                    <p>Analyze your resume and discover skill gaps.</p>
-                </div>
-
-            </div>
-
-
-            <a href="/logout" class="logout-link">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                Logout
-            </a>
-
-        </div>
-
-    </aside>
-
-
-    <!-- ================= MAIN CONTENT ================= -->
-
-    <main class="main-content">
-
-
-        <!-- TOP BAR -->
-
-        <header class="topbar">
-
-            <div class="mobile-brand">
-                <i class="fa-solid fa-file-circle-check"></i>
-                ATS Analyzer
-            </div>
-
-            <div class="topbar-right">
-
-                <div class="status">
-                    <span class="status-dot"></span>
-                    System Ready
-                </div>
-
-                <div class="profile">
-
-                    <div class="profile-avatar">
-                        {{ fullname[0]|upper }}
-                    </div>
-
-                    <div class="profile-info">
-                        <strong>{{ fullname }}</strong>
-                        <span>Resume Analyst</span>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </header>
-
-
-        <!-- ================= PAGE CONTENT ================= -->
-
-        <section class="page-content">
-
-
-            <!-- WELCOME -->
-
-            <div class="welcome-section">
-
-                <div>
-
-                    <span class="welcome-label">
-                        YOUR RESUME WORKSPACE
-                    </span>
-
-                    <h1>
-                        Welcome back, {{ fullname }} 👋
-                    </h1>
-
-                    <p>
-                        Analyze your resume, identify skill gaps,
-                        and improve your job readiness.
-                    </p>
-
-                </div>
-
-
-                <a href="/upload" class="primary-btn">
-
-                    <i class="fa-solid fa-plus"></i>
-
-                    Analyze Resume
-
-                </a>
-
-            </div>
-
-
-            <!-- ================= ATS STATS ================= -->
-
-            <div class="section-header">
-
-                <div>
-                    <h2>ATS Performance</h2>
-
-                    <p>
-                        Your resume analysis overview
-                    </p>
-                </div>
-
-            </div>
-
-
-            <div class="stats-grid">
-
-
-                <!-- TOTAL RESUMES -->
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon blue">
-                            <i class="fa-solid fa-file-lines"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            RESUMES
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ total_resumes }}
-                    </div>
-
-                    <div class="stat-description">
-                        Resumes uploaded
-                    </div>
-
-                </div>
-
-
-                <!-- TOTAL ATS -->
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon purple">
-                            <i class="fa-solid fa-chart-line"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            ATS ANALYSES
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ total_ats }}
-                    </div>
-
-                    <div class="stat-description">
-                        Resume evaluations
-                    </div>
-
-                </div>
-
-
-                <!-- AVERAGE -->
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon green">
-                            <i class="fa-solid fa-bullseye"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            AVG SCORE
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ "%.1f"|format(average_ats) }}%
-                    </div>
-
-                    <div class="score-bar">
-
-                        <div class="score-progress"
-                             style="width: {{ average_ats }}%;">
-                        </div>
-
-                    </div>
-
-                    <div class="stat-description">
-                        Average ATS performance
-                    </div>
-
-                </div>
-
-
-                <!-- HIGHEST -->
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon orange">
-                            <i class="fa-solid fa-trophy"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            BEST SCORE
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ "%.1f"|format(highest_ats) }}%
-                    </div>
-
-                    <div class="stat-description">
-                        Highest ATS score
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- ================= MAIN ACTION AREA ================= -->
-
-            <div class="analysis-grid">
-
-
-                <!-- ATS ANALYSIS -->
-
-                <div class="analysis-card primary-analysis">
-
-                    <div class="analysis-content">
-
-                        <div class="analysis-icon">
-                            <i class="fa-solid fa-file-circle-check"></i>
-                        </div>
-
-                        <span class="card-tag">
-                            ATS ANALYSIS
-                        </span>
-
-                        <h2>
-                            Optimize your resume for your target role
-                        </h2>
-
-                        <p>
-                            Upload your resume and get an ATS score,
-                            matched skills, missing skills, semantic
-                            matches, and AI-powered recommendations.
-                        </p>
-
-                        <a href="/upload" class="analysis-btn">
-                            Start ATS Analysis
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </a>
-
-                    </div>
-
-
-                    <div class="analysis-visual">
-
-                        <div class="score-circle">
-
-                            <div>
-                                <strong>
-                                    {{ "%.0f"|format(average_ats) }}%
-                                </strong>
-
-                                <span>AVG ATS</span>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- GENERAL ANALYZER -->
-
-                <div class="analysis-card general-analysis">
-
-                    <div class="small-card-icon">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    </div>
-
-                    <span class="card-tag">
-                        GENERAL ANALYZER
-                    </span>
-
-                    <h2>
-                        Check overall resume quality
-                    </h2>
-
-                    <p>
-                        Evaluate structure, clarity, skills,
-                        sections, contact information and more.
-                    </p>
-
-                    <a href="/general-analyzer" class="text-btn">
-                        Open Analyzer
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </a>
-
-                </div>
-
-            </div>
-
-
-            <!-- ================= GENERAL ANALYTICS ================= -->
-
-            <div class="section-header general-header">
-
-                <div>
-
-                    <h2>General Resume Analytics</h2>
-
-                    <p>
-                        Overall resume quality insights
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="stats-grid general-stats">
-
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon teal">
-                            <i class="fa-solid fa-magnifying-glass-chart"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            ANALYSES
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ total_general }}
-                    </div>
-
-                    <div class="stat-description">
-                        General analyses
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon green">
-                            <i class="fa-solid fa-chart-simple"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            AVG SCORE
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ "%.1f"|format(average_general) }}%
-                    </div>
-
-                    <div class="score-bar">
-
-                        <div class="score-progress"
-                             style="width: {{ average_general }}%;">
-                        </div>
-
-                    </div>
-
-                    <div class="stat-description">
-                        Average resume quality
-                    </div>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <div class="stat-top">
-
-                        <div class="stat-icon orange">
-                            <i class="fa-solid fa-star"></i>
-                        </div>
-
-                        <span class="stat-label">
-                            BEST SCORE
-                        </span>
-
-                    </div>
-
-                    <div class="stat-number">
-                        {{ "%.1f"|format(highest_general) }}%
-                    </div>
-
-                    <div class="stat-description">
-                        Highest general score
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- ================= FEATURES ================= -->
-
-            <div class="section-header">
-
-                <div>
-
-                    <h2>Platform Capabilities</h2>
-
-                    <p>
-                        Everything you need to improve your resume
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="features-grid">
-
-
-                <div class="feature-card">
-
-                    <div class="feature-icon blue">
-                        <i class="fa-solid fa-bullseye"></i>
-                    </div>
-
-                    <h3>ATS Scoring</h3>
-
-                    <p>
-                        Get a measurable score based on
-                        relevant resume signals.
-                    </p>
-
-                </div>
-
-
-                <div class="feature-card">
-
-                    <div class="feature-icon purple">
-                        <i class="fa-solid fa-brain"></i>
-                    </div>
-
-                    <h3>AI Insights</h3>
-
-                    <p>
-                        Receive contextual feedback and
-                        improvement suggestions.
-                    </p>
-
-                </div>
-
-
-                <div class="feature-card">
-
-                    <div class="feature-icon green">
-                        <i class="fa-solid fa-link"></i>
-                    </div>
-
-                    <h3>Semantic Matching</h3>
-
-                    <p>
-                        Identify related skills beyond
-                        simple keyword matching.
-                    </p>
-
-                </div>
-
-
-                <div class="feature-card">
-
-                    <div class="feature-icon orange">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                    </div>
-
-                    <h3>Resume History</h3>
-
-                    <p>
-                        Keep track of your previous
-                        resume analyses.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <!-- ================= FOOTER ================= -->
-
-            <footer>
-
-                <span>
-                    ATS Resume Analyzer
-                </span>
-
-                <span>
-                    AI-Powered Resume Analysis Platform
-                </span>
-
-            </footer>
-
-
-        </section>
-
-    </main>
+    <a href="/upload" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i>
+        Analyze resume
+    </a>
 
 </div>
 
-</body>
-</html>
+
+<!-- ================= QUICK ACTIONS ================= -->
+
+<div class="grid grid-2">
+
+    <a href="/upload" class="card action-card featured">
+        <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
+        <h2>ATS analysis for a job role</h2>
+        <p>
+            Pick a role and get an ATS score, matched and missing skills,
+            and AI recommendations.
+        </p>
+        <span class="go">Start ATS analysis <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+
+    <a href="/general-analyzer" class="card action-card">
+        <div class="stat-icon tint-info"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h2>General resume check</h2>
+        <p class="muted">
+            Check structure, sections, contact details, clarity
+            and overall quality.
+        </p>
+        <span class="go">Open analyzer <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
+
+</div>
+
+
+<!-- ================= ATS STATS ================= -->
+
+<div class="section-title">
+    <h2>ATS performance</h2>
+    <p>How your resumes score against job roles</p>
+</div>
+
+<div class="grid grid-4">
+
+    <div class="card stat">
+        <div class="stat-top">
+            Resumes uploaded
+            <div class="stat-icon tint-primary"><i class="fa-solid fa-file-lines"></i></div>
+        </div>
+        <div class="stat-value">{{ total_resumes }}</div>
+    </div>
+
+    <div class="card stat">
+        <div class="stat-top">
+            ATS analyses
+            <div class="stat-icon tint-info"><i class="fa-solid fa-chart-line"></i></div>
+        </div>
+        <div class="stat-value">{{ total_ats }}</div>
+    </div>
+
+    <div class="card stat">
+        <div class="stat-top">
+            Average ATS score
+            <div class="stat-icon tint-good"><i class="fa-solid fa-gauge-high"></i></div>
+        </div>
+        <div class="stat-value">{{ "%.1f"|format(average_ats|float) }}%</div>
+        {{ meter("", average_ats) }}
+    </div>
+
+    <div class="card stat">
+        <div class="stat-top">
+            Best ATS score
+            <div class="stat-icon tint-ok"><i class="fa-solid fa-trophy"></i></div>
+        </div>
+        <div class="stat-value">{{ "%.1f"|format(highest_ats|float) }}%</div>
+    </div>
+
+</div>
+
+
+<!-- ================= GENERAL STATS ================= -->
+
+<div class="section-title">
+    <h2>General resume quality</h2>
+    <p>Overall quality from the general analyzer</p>
+</div>
+
+<div class="grid grid-3">
+
+    <div class="card stat">
+        <div class="stat-top">
+            General analyses
+            <div class="stat-icon tint-info"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+        </div>
+        <div class="stat-value">{{ total_general }}</div>
+    </div>
+
+    <div class="card stat">
+        <div class="stat-top">
+            Average quality
+            <div class="stat-icon tint-good"><i class="fa-solid fa-chart-simple"></i></div>
+        </div>
+        <div class="stat-value">{{ "%.1f"|format(average_general|float) }}%</div>
+        {{ meter("", average_general) }}
+    </div>
+
+    <div class="card stat">
+        <div class="stat-top">
+            Best quality score
+            <div class="stat-icon tint-ok"><i class="fa-solid fa-star"></i></div>
+        </div>
+        <div class="stat-value">{{ "%.1f"|format(highest_general|float) }}%</div>
+    </div>
+
+</div>
+
+
+<!-- ================= TIPS ================= -->
+
+<div class="section-title">
+    <h2>Quick tips</h2>
+    <p>Small changes that raise your score</p>
+</div>
+
+<div class="card">
+    <ul class="list list-tip">
+        <li><i class="fa-solid fa-lightbulb"></i><span>Use the exact skill names from the job posting, e.g. "React" and "REST APIs".</span></li>
+        <li><i class="fa-solid fa-lightbulb"></i><span>Start each bullet with an action verb and add a number: "Reduced load time by 40%".</span></li>
+        <li><i class="fa-solid fa-lightbulb"></i><span>Keep a simple one-column layout. Tables, columns and icons confuse many ATS systems.</span></li>
+        <li><i class="fa-solid fa-lightbulb"></i><span>Add LinkedIn and GitHub links, and list the tech stack under each project.</span></li>
+    </ul>
+</div>
+
+{% endblock %}

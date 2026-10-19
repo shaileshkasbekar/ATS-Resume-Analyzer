@@ -1,138 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
+{% from "_macros.html" import level %}
 
-    <meta charset="UTF-8">
+{% block title %}History{% endblock %}
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+{% block content %}
 
-    <title>Resume History</title>
+<div class="page-head">
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/history.css') }}">
+    <div>
+        <span class="eyebrow">History</span>
+        <h1>Your past analyses</h1>
+        <p>Open any report again, or delete the ones you no longer need.</p>
+    </div>
 
-</head>
+    <a href="/upload" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> New analysis
+    </a>
 
-<body>
-
-{% include "_flash.html" %}
-
-    <div class="container">
-
-        <h1>Resume History</h1>
-
-        <table>
-
-            <tr>
-
-                <th>Resume File</th>
-
-                <th>Analysis Type</th>
-
-                <th>Job Role</th>
-
-                <th>Score</th>
-
-                <th>Upload Date</th>
-
-                <th>Action</th>
-
-            </tr>
+</div>
 
 
-            {% for resume in history_data %}
+<div class="card">
 
-            <tr>
+    {% if history_data %}
 
-                <td>
-                    {{ resume.file_name }}
-                </td>
+    <div class="toolbar">
 
-                <td>
-                    {{ resume.analysis_type }}
-                </td>
+        <div class="input-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input class="input" type="search" placeholder="Search by file or role…"
+                   data-history-search>
+        </div>
 
-                <td>
-                    {{ resume.role_name }}
-                </td>
-
-                <td>
-                    {{ resume.score }}%
-                </td>
-
-                <td>
-                    {{ resume.upload_date }}
-                </td>
-
-                <td>
-
-                    {% if resume.analysis_type == "General Analysis" %}
-
-                        <a href="/history/general/{{ resume.analysis_id }}"
-                           class="action-btn view-btn">
-                            View
-                        </a>
-
-                        <form
-                            action="/history/delete/general/{{ resume.analysis_id }}"
-                            method="POST"
-                            style="display:inline;">
-
-                            <button
-                                type="submit"
-                                class="action-btn delete-btn"
-                                onclick="return confirm('Are you sure you want to delete this analysis?');">
-
-                                Delete
-
-                            </button>
-
-                        </form>
-
-                    {% else %}
-
-                        <a href="/history/ats/{{ resume.analysis_id }}"
-                           class="action-btn view-btn">
-                            View
-                        </a>
-
-                        <form
-                            action="/history/delete/ats/{{ resume.analysis_id }}"
-                            method="POST"
-                            style="display:inline;">
-
-                            <button
-                                type="submit"
-                                class="action-btn delete-btn"
-                                onclick="return confirm('Are you sure you want to delete this analysis?');">
-
-                                Delete
-
-                            </button>
-
-                        </form>
-
-                    {% endif %}
-
-                </td>
-
-            </tr>
-
-            {% endfor %}
-
-        </table>
-
-
-        <a href="/dashboard" class="back-btn">
-
-            Back to Dashboard
-
-        </a>
+        <select class="input" data-history-type>
+            <option value="">All types</option>
+            <option value="ATS Analysis">ATS analysis</option>
+            <option value="General Analysis">General analysis</option>
+        </select>
 
     </div>
 
-</body>
+    <div class="table-wrap">
 
-</html>
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Resume</th>
+                    <th>Type</th>
+                    <th>Job role</th>
+                    <th>Score</th>
+                    <th>Date</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for resume in history_data %}
+
+                {% set kind = "general" if resume.analysis_type == "General Analysis" else "ats" %}
+
+                <tr data-history-row data-type="{{ resume.analysis_type }}">
+
+                    <td>
+                        <div class="file-cell">
+                            <i class="fa-regular fa-file-pdf"></i>
+                            {{ resume.file_name }}
+                        </div>
+                    </td>
+
+                    <td>
+                        {% if kind == "general" %}
+                        <span class="badge tint-info">General</span>
+                        {% else %}
+                        <span class="badge tint-primary">ATS</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ resume.role_name }}</td>
+
+                    <td>
+                        <span class="badge tint-{{ level(resume.score) }}">
+                            {{ "%.1f"|format(resume.score|float) }}%
+                        </span>
+                    </td>
+
+                    <td class="muted" style="white-space: nowrap;">
+                        {% if resume.upload_date and resume.upload_date.strftime is defined %}
+                        {{ resume.upload_date.strftime("%d %b %Y, %I:%M %p") }}
+                        {% else %}
+                        {{ resume.upload_date }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="row-actions">
+
+                            <a href="/history/{{ kind }}/{{ resume.analysis_id }}"
+                               class="btn btn-ghost btn-sm">
+                                View
+                            </a>
+
+                            <form action="/history/delete/{{ kind }}/{{ resume.analysis_id }}"
+                                  method="POST">
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        aria-label="Delete"
+                                        onclick="return confirm('Are you sure you want to delete this analysis?');">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <p class="empty-state" data-history-nomatch hidden>
+        No analyses match your search.
+    </p>
+
+    {% else %}
+
+    <div class="empty-state">
+        <i class="fa-regular fa-folder-open"></i>
+        <h3>No analyses yet</h3>
+        <p>Upload your first resume to see your reports here.</p>
+        <a href="/upload" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Analyze a resume
+        </a>
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
