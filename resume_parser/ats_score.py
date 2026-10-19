@@ -395,6 +395,13 @@ def calculate_ats_score(resume_skills, role_skill_groups):
 
         )
 
+    elif technology_groups:
+
+        # The role needs a technology path, but the resume
+        # matches none of them, so that 60% is lost
+
+        overall_score = common_score * 0.40
+
     else:
 
         overall_score = common_score
@@ -587,6 +594,18 @@ def calculate_ats_score(resume_skills, role_skill_groups):
     # -----------------------------------------
     # Remove duplicates
     # -----------------------------------------
+
+    # -----------------------------------------
+    # No technology path: suggest choosing one
+    # -----------------------------------------
+
+    if not detected_path and technology_groups:
+
+        recommended_skills.append(
+            "Build skills in one of these paths: "
+            + ", ".join(technology_groups.keys())
+        )
+
 
     matched_skills = list(
         dict.fromkeys(

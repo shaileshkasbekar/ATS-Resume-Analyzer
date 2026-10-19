@@ -1,8 +1,15 @@
 import re
 
 
-def extract_skills(text):
-    
+def extract_skills(text, extra_skills=None):
+    """
+    Finds skills in the resume text.
+
+    extra_skills: skill names from the database (for example
+    the selected job role's skills), so every skill a role
+    needs can be detected even if it is not in the list below.
+    """
+
     skills_database = [
 
         # Programming Languages
@@ -69,9 +76,49 @@ def extract_skills(text):
         "Postman",
         "Firebase",
         "MySQL Workbench",
-        "XAMPP"
+        "XAMPP",
+
+        # Frameworks + APIs
+        "FastAPI",
+        "NestJS",
+        "Spring Boot",
+        "Hibernate",
+        "JDBC",
+        ".NET",
+        "ASP.NET Core",
+        "Entity Framework",
+        "REST API",
+        "GraphQL",
+        "Authentication",
+        "Responsive Design",
+        "Tailwind CSS",
+        "Next.js",
+        "Redux",
+
+        # Data
+        "Statistics",
+        "Pandas",
+        "NumPy",
+        "Excel",
+        "Power BI",
+        "Tableau",
+        "Matplotlib",
+        "Scikit-learn",
+
+        # Testing / DevOps
+        "Jest",
+        "JUnit",
+        "Pytest",
+        "CI/CD",
+        "Jenkins"
 
     ]
+
+    for skill in extra_skills or []:
+
+        if skill and skill.lower() not in (s.lower() for s in skills_database):
+
+            skills_database.append(skill)
 
     found_skills = []
 
@@ -111,6 +158,23 @@ SKILL_ALIASES = {
     "Artificial Intelligence": ["AI"],
     "NLP": ["Natural Language Processing"],
     "VS Code": ["VSCode", "Visual Studio Code"],
+    "REST API": ["REST APIs", "RESTful", "RESTful API", "RESTful APIs", "REST-API"],
+    "Authentication": ["JWT", "OAuth", "OAuth2", "Auth0"],
+    "FastAPI": ["Fast API"],
+    "NestJS": ["Nest.js"],
+    "Spring Boot": ["SpringBoot", "Spring Framework"],
+    "Hibernate": ["JPA"],
+    ".NET": ["dotnet", "ASP.NET", ".NET Core"],
+    "ASP.NET Core": ["ASP.NET MVC", "ASP.NET Web API"],
+    "Entity Framework": ["EF Core"],
+    "Responsive Design": ["Responsive Web Design", "Responsive"],
+    "Tailwind CSS": ["Tailwind", "TailwindCSS"],
+    "Next.js": ["NextJS"],
+    "Power BI": ["PowerBI"],
+    "Excel": ["MS Excel", "Microsoft Excel"],
+    "Statistics": ["Statistical Analysis", "Hypothesis Testing"],
+    "Scikit-learn": ["sklearn", "scikit learn"],
+    "CI/CD": ["CI CD", "GitHub Actions"],
 }
 
 

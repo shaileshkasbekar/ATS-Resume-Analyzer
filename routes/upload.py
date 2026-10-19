@@ -136,31 +136,6 @@ def upload_resume():
 
 
         # =========================================
-        # EXTRACT RESUME SKILLS
-        # =========================================
-
-        skills = extract_skills(text)
-
-
-        # Normalize skills
-
-        skills = [
-            skill.strip().lower()
-            for skill in skills
-        ]
-
-
-        print("\n==============================")
-        print("RESUME SKILLS")
-        print("==============================")
-
-
-        for skill in skills:
-
-            print(skill)
-
-
-        # =========================================
         # GET ROLE + GROUPS + SKILLS
         # =========================================
 
@@ -225,6 +200,40 @@ def upload_resume():
             )
 
             return redirect("/upload")
+
+
+        # =========================================
+        # EXTRACT RESUME SKILLS
+        # =========================================
+
+        # The role's own skills are passed in, so every
+        # skill stored in the database can be detected
+
+        skills = extract_skills(
+            text,
+            [
+                skill_data["skill_name"]
+                for skill_data in role_skill_groups
+            ]
+        )
+
+
+        # Normalize skills
+
+        skills = [
+            skill.strip().lower()
+            for skill in skills
+        ]
+
+
+        print("\n==============================")
+        print("RESUME SKILLS")
+        print("==============================")
+
+
+        for skill in skills:
+
+            print(skill)
 
 
         # -----------------------------------------
@@ -584,15 +593,28 @@ def upload_resume():
         """
 
 
-        # Technology path confidence
+        # Technology path confidence: how strongly the
+        # resume matches its detected technology path.
+        # Roles without technology paths use the rule score.
 
-        if technology_path:
+        has_technology_groups = any(
+            group["group_type"] == "technology"
+            for group in group_results.values()
+        )
 
-            technology_path_score = 100
+        if detected_path:
+
+            technology_path_score = group_results[
+                detected_path
+            ]["path_strength"]
+
+        elif has_technology_groups:
+
+            technology_path_score = 0
 
         else:
 
-            technology_path_score = 0
+            technology_path_score = rule_score
 
 
         # -----------------------------------------

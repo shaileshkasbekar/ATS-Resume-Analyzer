@@ -138,6 +138,39 @@
     </div>
 
 
+    <!-- ================= WRITING QUALITY ================= -->
+
+    {% if result.content is defined %}
+    <div class="card">
+
+        <div class="card-head">
+            <h2><i class="fa-solid fa-pen-nib"></i> Writing quality</h2>
+        </div>
+
+        <ul class="list check-list">
+            {{ check(result.content.quantified >= 3,
+                     "Shows impact with numbers (" ~ result.content.quantified ~ " found)",
+                     "Few numbers showing impact (" ~ result.content.quantified ~ " found) — add results like \"40% faster\"") }}
+            {{ check(result.content.action_verbs|length >= 5,
+                     "Uses strong action verbs (" ~ result.content.action_verbs|length ~ " different)",
+                     "Few bullets start with action verbs (" ~ result.content.action_verbs|length ~ " found)") }}
+            {{ check(not result.content.weak_phrases,
+                     "No weak phrases like \"responsible for\"",
+                     "Weak phrases found: " ~ result.content.weak_phrases|join(", ")) }}
+            {{ check(result.content.pronouns <= 2,
+                     "No personal pronouns",
+                     "Uses \"I / me / my\" " ~ result.content.pronouns ~ " times") }}
+        </ul>
+
+        {% if result.content.action_verbs %}
+        <p class="muted small" style="margin: 16px 0 8px;">Action verbs you used:</p>
+        {{ chips(result.content.action_verbs|map("capitalize")|list, "good") }}
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+
     <!-- ================= SKILLS ================= -->
 
     <div class="card">
