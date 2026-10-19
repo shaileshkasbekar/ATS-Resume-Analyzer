@@ -1,4 +1,10 @@
-def calculate_ats_score(resume_skills, role_skill_groups):
+# A skill only listed (not used in projects/experience)
+# earns this share of its weight
+
+LISTED_ONLY_CREDIT = 0.75
+
+
+def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
     """
     Generic dynamic ATS scoring engine.
 
@@ -12,7 +18,12 @@ def calculate_ats_score(resume_skills, role_skill_groups):
     1. Weighted skill score
     2. Number of matched skills
     3. Core skill matches
+
+    skill_evidence: optional {"skill": "used" / "listed"}.
+    Skills that are only listed get partial credit.
     """
+
+    skill_evidence = skill_evidence or {}
 
     # -----------------------------------------
     # Normalize resume skills
@@ -106,9 +117,16 @@ def calculate_ats_score(resume_skills, role_skill_groups):
             in resume_skills
         ):
 
+            # Full credit if used in projects / experience
+
+            if skill_evidence.get(skill_name.strip().lower()) == "listed":
+                credit = weight * LISTED_ONLY_CREDIT
+            else:
+                credit = weight
+
             group_results[group_name][
                 "matched_weight"
-            ] += weight
+            ] += credit
 
             group_results[group_name][
                 "matched_skills"
@@ -125,19 +143,19 @@ def calculate_ats_score(resume_skills, role_skill_groups):
 
                 group_results[group_name][
                     "core_matched"
-                ] += weight
+                ] += credit
 
             elif importance == "supporting":
 
                 group_results[group_name][
                     "supporting_matched"
-                ] += weight
+                ] += credit
 
             elif importance == "optional":
 
                 group_results[group_name][
                     "optional_matched"
-                ] += weight
+                ] += credit
 
         else:
 

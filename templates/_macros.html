@@ -82,6 +82,60 @@
 {%- endmacro %}
 
 
+{# Learning plan for missing skills #}
+
+{% macro learning_plan_card(plan) -%}
+{% if plan %}
+<div class="card">
+
+    <div class="card-head">
+        <h2><i class="fa-solid fa-graduation-cap"></i> Your learning plan</h2>
+        <span class="muted small">Most important first</span>
+    </div>
+
+    <div class="grid grid-2">
+
+        {% for item in plan %}
+
+        <div class="group">
+
+            <div class="group-head">
+                <h3>{{ loop.index }}. {{ item.skill }}</h3>
+                <div class="chips">
+                    {% if item.importance == "core" %}
+                    <span class="badge tint-low">Must have</span>
+                    {% elif item.importance == "supporting" %}
+                    <span class="badge tint-ok">Important</span>
+                    {% elif item.importance == "optional" %}
+                    <span class="badge tint-info">Nice to have</span>
+                    {% endif %}
+                    <span class="badge tint-primary"><i class="fa-regular fa-clock"></i> {{ item.time }}</span>
+                </div>
+            </div>
+
+            <ul class="list list-tip">
+                {% for step in item.steps %}
+                <li><i class="fa-solid fa-circle-dot"></i><span>{{ step }}</span></li>
+                {% endfor %}
+                <li><i class="fa-solid fa-hammer"></i><span><strong>Project:</strong> {{ item.project }}</span></li>
+            </ul>
+
+            <a href="{{ item.resource_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">
+                <i class="fa-solid fa-book-open"></i> {{ item.resource_name }}
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+{% endif %}
+{%- endmacro %}
+
+
 {# One yes/no line in a checklist #}
 
 {% macro check(ok, yes_text, no_text) -%}

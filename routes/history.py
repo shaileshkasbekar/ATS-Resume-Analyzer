@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, session, redirect
-from models.database import get_db_connection
+from models.database import get_db_connection, table_columns
 import json
+
+from resume_parser.recommendation import build_learning_plan
+from routes.job_match import render_job_match_result
 
 
 history = Blueprint("history", __name__)
@@ -62,14 +65,45 @@ def view_history():
 
     WHERE resumes.user_id = %s
 
-
-    ORDER BY upload_date DESC
-
     """
+
+    params = [user_id, user_id]
+
+
+    # Job matches (only after the database upgrade)
+
+    if table_columns(cursor, "jd_results"):
+
+        query += """
+
+        UNION ALL
+
+        SELECT
+            resumes.resume_id,
+            jd_results.jd_result_id AS analysis_id,
+            resumes.file_name,
+            COALESCE(NULLIF(jd_results.job_title, ''), 'Job description') AS role_name,
+            jd_results.score AS score,
+            resumes.upload_date,
+            'Job Match' AS analysis_type
+
+        FROM resumes
+
+        JOIN jd_results
+            ON resumes.resume_id = jd_results.resume_id
+
+        WHERE resumes.user_id = %s
+
+        """
+
+        params.append(user_id)
+
+
+    query += " ORDER BY upload_date DESC"
 
     cursor.execute(
         query,
-        (user_id, user_id)
+        tuple(params)
     )
 
     history_data = cursor.fetchall()
@@ -430,16 +464,42 @@ def view_ats_result(result_id):
 
     if data.get("recommended_skills"):
 
-        recommended_skills = [
+        # New results are saved as JSON,
+        # older ones as comma-separated text
 
-            skill.strip()
+        try:
 
-            for skill in
-            data["recommended_skills"].split(",")
+            recommended_skills = json.loads(
+                data["recommended_skills"]
+            )
 
-            if skill.strip()
+        except ValueError:
 
-        ]
+            recommended_skills = [
+                skill.strip()
+                for skill in
+                data["recommended_skills"].split(",")
+                if skill.strip()
+            ]
+
+
+    # =========================================
+    # SKILL EVIDENCE (saved after the upgrade)
+    # =========================================
+
+    skill_evidence = {}
+
+    if data.get("skill_evidence"):
+
+        try:
+
+            skill_evidence = json.loads(
+                data["skill_evidence"]
+            )
+
+        except ValueError:
+
+            skill_evidence = {}
 
 
     # =========================================
@@ -483,7 +543,9 @@ def view_ats_result(result_id):
 
             resume_skills,
 
-            role_skill_groups
+            role_skill_groups,
+
+            skill_evidence
 
         )
 
@@ -637,7 +699,14 @@ def view_ats_result(result_id):
 
         ai_recommendations=ai_recommendations,
 
-        filename=data["file_name"]
+        filename=data["file_name"],
+
+        skill_evidence=skill_evidence,
+
+        learning_plan=build_learning_plan(
+            missing_skills,
+            role_skill_groups
+        )
 
     )
 
@@ -744,5 +813,103 @@ def delete_ats_result(result_id):
     cursor.close()
     connection.close()
 
+
+    return redirect("/history")
+
+# =========================================
+# VIEW JOB MATCH RESULT
+# =========================================
+
+@history.route("/history/jd/<int:result_id>")
+def view_jd_result(result_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute(
+        """
+        SELECT jd_results.*, resumes.file_name
+        FROM jd_results
+        JOIN resumes
+            ON jd_results.resume_id = resumes.resume_id
+        WHERE jd_results.jd_result_id = %s
+        AND resumes.user_id = %s
+        """,
+        (result_id, session["user_id"])
+    )
+
+    data = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if not data:
+        return redirect("/history")
+
+    try:
+        details = json.loads(data["details"] or "{}")
+    except ValueError:
+        details = {}
+
+    # Fill in anything missing so the page always renders
+
+    for key in [
+        "must_have_skills", "nice_to_have_skills", "matched_skills",
+        "missing_must_have", "missing_nice_to_have", "strengths", "gaps",
+        "recommendations", "keywords_to_add"
+    ]:
+        details.setdefault(key, [])
+
+    details.setdefault("skill_evidence", {})
+    details.setdefault("required_experience", "")
+    details.setdefault("suggested_summary", "")
+
+    result = {
+        "job_title": data["job_title"],
+        "score": data["score"],
+        "keyword_score": data["keyword_score"],
+        "ai_relevance": data["ai_relevance"],
+        "experience_match": data["experience_match"],
+        "details": details
+    }
+
+    return render_job_match_result(result, data["file_name"])
+
+
+# =========================================
+# DELETE JOB MATCH RESULT
+# =========================================
+
+@history.route(
+    "/history/delete/jd/<int:result_id>",
+    methods=["POST"]
+)
+def delete_jd_result(result_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        DELETE jd_results
+        FROM jd_results
+        JOIN resumes
+            ON jd_results.resume_id = resumes.resume_id
+        WHERE jd_results.jd_result_id = %s
+        AND resumes.user_id = %s
+        """,
+        (result_id, session["user_id"])
+    )
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
 
     return redirect("/history")

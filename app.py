@@ -7,6 +7,7 @@ from routes.auth import auth
 from routes.dashboard import dashboard
 from routes.history import history
 from routes.general_analyzer import general_analyzer
+from routes.job_match import job_match
 
 app = Flask(__name__)
 
@@ -21,6 +22,7 @@ app.register_blueprint(upload)
 app.register_blueprint(dashboard)
 app.register_blueprint(history)
 app.register_blueprint(general_analyzer)
+app.register_blueprint(job_match)
 
 @app.route("/")
 def home():

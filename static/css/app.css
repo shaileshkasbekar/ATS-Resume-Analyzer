@@ -812,6 +812,12 @@ select.input {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+textarea.input {
+    min-height: 220px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
 .input-wrap .input {
     padding-left: 40px;
 }

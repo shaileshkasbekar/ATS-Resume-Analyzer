@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% from "_macros.html" import ring, meter, chips, icon_list, verdict, learning_plan_card %}
+
+{% block title %}Job Match Result{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+
+    <div>
+        <span class="eyebrow">Job match result</span>
+        <h1>{{ result.job_title or "Your job match report" }}</h1>
+        {% if filename %}
+        <p><i class="fa-regular fa-file-pdf"></i> {{ filename }}</p>
+        {% endif %}
+    </div>
+
+    <div class="actions">
+        <a href="/history" class="btn btn-ghost">
+            <i class="fa-solid fa-clock-rotate-left"></i> History
+        </a>
+        <a href="/job-match" class="btn btn-primary">
+            <i class="fa-solid fa-rotate"></i> Match another job
+        </a>
+    </div>
+
+</div>
+
+
+<div class="stack">
+
+    <!-- ================= SCORE ================= -->
+
+    <div class="card hero">
+
+        {{ ring(result.score, "Job match") }}
+
+        <div class="hero-body">
+
+            <h2>{{ verdict(result.score) }}</h2>
+
+            <p>
+                You match {{ details.matched_skills|length }} of
+                {{ (details.must_have_skills|length) + (details.nice_to_have_skills|length) }}
+                skills this job asks for.
+                {% if details.required_experience %}
+                <br>Experience asked: <strong>{{ details.required_experience }}</strong>
+                {% endif %}
+            </p>
+
+            {{ meter("Skill keyword match", result.keyword_score) }}
+            {% if result.ai_available is not defined or result.ai_available %}
+            {{ meter("AI relevance", result.ai_relevance) }}
+            {{ meter("Experience match", result.experience_match) }}
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= SKILLS ================= -->
+
+    <div class="grid grid-2">
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-circle-check"></i> Skills you match</h2>
+                <span class="badge tint-good">{{ details.matched_skills|length }}</span>
+            </div>
+
+            {% if details.matched_skills %}
+            <div class="chips">
+                {% for skill in details.matched_skills %}
+                {% if details.skill_evidence.get(skill|lower) == "listed" %}
+                <span class="chip" title="Only listed — not shown in your projects or experience">
+                    <i class="fa-solid fa-list"></i> {{ skill }}
+                </span>
+                {% else %}
+                <span class="chip chip-good" title="Used in your projects or experience">
+                    <i class="fa-solid fa-check-double"></i> {{ skill }}
+                </span>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <p class="muted small" style="margin-top: 14px;">
+                <i class="fa-solid fa-check-double" style="color: var(--good);"></i> used in projects/experience
+                &nbsp;·&nbsp;
+                <i class="fa-solid fa-list"></i> only listed
+            </p>
+            {% else %}
+            <p class="empty">None of the job's skills were found in your resume.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-circle-xmark"></i> Skills you are missing</h2>
+                <span class="badge tint-low">
+                    {{ (details.missing_must_have|length) + (details.missing_nice_to_have|length) }}
+                </span>
+            </div>
+
+            {% if details.missing_must_have or details.missing_nice_to_have %}
+
+            {% if details.missing_must_have %}
+            <p class="muted small" style="margin-bottom: 8px;">Must have</p>
+            {{ chips(details.missing_must_have, "low", "fa-xmark") }}
+            {% endif %}
+
+            {% if details.missing_nice_to_have %}
+            <p class="muted small" style="margin: 14px 0 8px;">Nice to have</p>
+            {{ chips(details.missing_nice_to_have, "", "fa-plus") }}
+            {% endif %}
+
+            {% else %}
+            <p class="empty">🎉 You have every skill this job lists.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+
+    <!-- ================= KEYWORDS + SUMMARY ================= -->
+
+    {% if details.keywords_to_add or details.suggested_summary %}
+    <div class="grid grid-2">
+
+        {% if details.keywords_to_add %}
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-key"></i> Keywords to add</h2>
+            </div>
+            <p class="muted small" style="margin-bottom: 12px;">
+                Words from the job posting that are missing in your resume.
+                Add the ones that are true for you.
+            </p>
+            {{ chips(details.keywords_to_add, "primary") }}
+        </div>
+        {% endif %}
+
+        {% if details.suggested_summary %}
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-pen-nib"></i> Summary for this job</h2>
+                <button type="button" class="btn btn-ghost btn-sm" data-copy="#suggested-summary">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
+            </div>
+            <p id="suggested-summary">{{ details.suggested_summary }}</p>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+
+    <!-- ================= STRENGTHS / GAPS ================= -->
+
+    {% if details.strengths or details.gaps %}
+    <div class="grid grid-2">
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-thumbs-up"></i> Why you fit</h2>
+            </div>
+            {{ icon_list(details.strengths, "good", "fa-circle-check", "No specific strengths detected.") }}
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> Gaps</h2>
+            </div>
+            {{ icon_list(details.gaps, "low", "fa-circle-exclamation", "No major gaps detected.") }}
+        </div>
+
+    </div>
+    {% endif %}
+
+
+    <!-- ================= LEARNING PLAN ================= -->
+
+    {{ learning_plan_card(learning_plan) }}
+
+
+    <!-- ================= RECOMMENDATIONS ================= -->
+
+    {% if details.recommendations %}
+    <div class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-lightbulb"></i> Recommendations</h2>
+        </div>
+        {{ icon_list(details.recommendations, "tip", "fa-arrow-right") }}
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

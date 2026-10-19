@@ -37,6 +37,7 @@
             <option value="">All types</option>
             <option value="ATS Analysis">ATS analysis</option>
             <option value="General Analysis">General analysis</option>
+            <option value="Job Match">Job match</option>
         </select>
 
     </div>
@@ -49,7 +50,7 @@
                 <tr>
                     <th>Resume</th>
                     <th>Type</th>
-                    <th>Job role</th>
+                    <th>Role / job</th>
                     <th>Score</th>
                     <th>Date</th>
                     <th></th>
@@ -60,7 +61,7 @@
 
                 {% for resume in history_data %}
 
-                {% set kind = "general" if resume.analysis_type == "General Analysis" else "ats" %}
+                {% set kind = {"General Analysis": "general", "Job Match": "jd"}.get(resume.analysis_type, "ats") %}
 
                 <tr data-history-row data-type="{{ resume.analysis_type }}">
 
@@ -74,6 +75,8 @@
                     <td>
                         {% if kind == "general" %}
                         <span class="badge tint-info">General</span>
+                        {% elif kind == "jd" %}
+                        <span class="badge tint-good">Job match</span>
                         {% else %}
                         <span class="badge tint-primary">ATS</span>
                         {% endif %}

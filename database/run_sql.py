@@ -12,7 +12,14 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models.database import get_db_connection
+import mysql.connector
+
+from config import Config
+
+
+# 1050 table exists, 1060 duplicate column, 1061 duplicate key
+
+ALREADY_DONE_ERRORS = {1050, 1060, 1061}
 
 
 def split_statements(sql):
@@ -43,16 +50,39 @@ def main():
     with open(path, encoding="utf-8") as file:
         statements = split_statements(file.read())
 
-    connection = get_db_connection()
+    # Connect to the MySQL server (not the database), so this
+    # also works for a fresh setup before the database exists.
+    # Each .sql file selects the database with USE.
+
+    connection = mysql.connector.connect(
+        host=Config.MYSQL_HOST,
+        user=Config.MYSQL_USER,
+        password=Config.MYSQL_PASSWORD
+    )
+
     cursor = connection.cursor()
 
     try:
 
         for statement in statements:
 
-            cursor.execute(statement)
-
             first_line = statement.splitlines()[0][:70]
+
+            try:
+
+                cursor.execute(statement)
+
+            except mysql.connector.Error as e:
+
+                # Column / table / key already exists:
+                # this step was done before, so skip it
+
+                if e.errno in ALREADY_DONE_ERRORS:
+                    print(f"SKIP (already done)  {first_line}")
+                    continue
+
+                raise
+
             print(f"OK ({cursor.rowcount} rows)  {first_line}")
 
         if dry_run:

@@ -1,741 +1,294 @@
 -- ============================================================
--- ATS RESUME ANALYZER
--- COMPLETE DATABASE SCHEMA
--- Database: ats_resume_analyzer_v2
--- ============================================================
-
-
--- ============================================================
--- DATABASE
+-- ATS RESUME ANALYZER - DATABASE SCHEMA
+--
+-- Fresh setup (run from the project folder):
+--   venv\Scripts\python.exe database\run_sql.py database\schema.sql
+--   venv\Scripts\python.exe database\run_sql.py database\upgrade_v3.sql
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS ats_resume_analyzer_v2;
 
 USE ats_resume_analyzer_v2;
 
-
 -- ============================================================
--- USERS TABLE
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS users (
-
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    full_name VARCHAR(100) NOT NULL,
-
-    email VARCHAR(100) NOT NULL UNIQUE,
-
-    password VARCHAR(255) NOT NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-);
-
-
--- ============================================================
--- RESUMES TABLE
+-- USERS
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS resumes (
-
-    resume_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    user_id INT NOT NULL,
-
-    file_name VARCHAR(255) NOT NULL,
-
-    file_path VARCHAR(500) NOT NULL,
-
-    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
-        ON DELETE CASCADE
-
-);
-
+CREATE TABLE IF NOT EXISTS `users` (
+  `user_id` int NOT NULL AUTO_INCREMENT,
+  `full_name` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- JOB ROLES TABLE
+-- RESUMES
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS job_roles (
-
-    role_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    role_name VARCHAR(100) NOT NULL UNIQUE,
-
-    description TEXT
-
-);
-
-
--- ============================================================
--- SKILLS MASTER TABLE
--- ============================================================
-
-CREATE TABLE IF NOT EXISTS skills (
-
-    skill_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    skill_name VARCHAR(100) NOT NULL UNIQUE
-
-);
-
+CREATE TABLE IF NOT EXISTS `resumes` (
+  `resume_id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `upload_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`resume_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `resumes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- ROLE SKILL GROUPS
---
--- Allows multiple valid technology paths for one role.
---
--- Example:
---
--- Backend Developer
---     ├── Common Backend
---     ├── Python Backend
---     ├── Node.js Backend
---     ├── Java Backend
---     └── .NET Backend
---
+-- JOB_ROLES
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS role_skill_groups (
-
-    group_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    role_id INT NOT NULL,
-
-    group_name VARCHAR(100) NOT NULL,
-
-    group_type ENUM(
-        'common',
-        'technology',
-        'specialization'
-    ) DEFAULT 'technology',
-
-    description TEXT,
-
-    FOREIGN KEY (role_id)
-        REFERENCES job_roles(role_id)
-        ON DELETE CASCADE,
-
-    UNIQUE (role_id, group_name)
-
-);
-
+CREATE TABLE IF NOT EXISTS `job_roles` (
+  `role_id` int NOT NULL AUTO_INCREMENT,
+  `role_name` varchar(100) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`role_id`),
+  UNIQUE KEY `role_name` (`role_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- JOB ROLE SKILLS
---
--- Each skill belongs to a particular role/technology group.
---
--- importance:
--- core       = important/core skill
--- supporting = supporting skill
--- optional   = optional/advanced skill
---
--- weight will later be used by the ATS scoring engine.
---
+-- SKILLS
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS job_role_skills (
-
-    id INT AUTO_INCREMENT PRIMARY KEY,
-
-    role_id INT NOT NULL,
-
-    group_id INT NOT NULL,
-
-    skill_name VARCHAR(100) NOT NULL,
-
-    importance ENUM(
-        'core',
-        'supporting',
-        'optional'
-    ) DEFAULT 'supporting',
-
-    weight DECIMAL(5,2) DEFAULT 1.00,
-
-    FOREIGN KEY (role_id)
-        REFERENCES job_roles(role_id)
-        ON DELETE CASCADE,
-
-    FOREIGN KEY (group_id)
-        REFERENCES role_skill_groups(group_id)
-        ON DELETE CASCADE,
-
-    UNIQUE (group_id, skill_name)
-
-);
-
+CREATE TABLE IF NOT EXISTS `skills` (
+  `skill_id` int NOT NULL AUTO_INCREMENT,
+  `skill_name` varchar(100) NOT NULL,
+  PRIMARY KEY (`skill_id`),
+  UNIQUE KEY `skill_name` (`skill_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- ATS RESUME RESULTS
+-- ROLE_SKILL_GROUPS
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS resume_results (
-
-    result_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    resume_id INT NOT NULL,
-
-    role_id INT NOT NULL,
-
-    ats_score DECIMAL(5,2),
-
-    matched_skills TEXT,
-
-    missing_skills TEXT,
-
-    recommended_skills TEXT,
-
-    detected_stack VARCHAR(150),
-
-    match_level VARCHAR(50),
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (resume_id)
-        REFERENCES resumes(resume_id)
-        ON DELETE CASCADE,
-
-    FOREIGN KEY (role_id)
-        REFERENCES job_roles(role_id)
-        ON DELETE CASCADE
-
-);
-
+CREATE TABLE IF NOT EXISTS `role_skill_groups` (
+  `group_id` int NOT NULL AUTO_INCREMENT,
+  `role_id` int NOT NULL,
+  `group_name` varchar(100) NOT NULL,
+  `group_type` enum('common','technology','specialization') DEFAULT 'technology',
+  `description` text,
+  PRIMARY KEY (`group_id`),
+  UNIQUE KEY `role_id` (`role_id`,`group_name`),
+  CONSTRAINT `role_skill_groups_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `job_roles` (`role_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- GENERAL RESUME RESULTS
+-- JOB_ROLE_SKILLS
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS general_results (
-
-    general_result_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    resume_id INT NOT NULL,
-
-    score DECIMAL(5,2),
-
-    email_detected BOOLEAN,
-
-    phone_detected BOOLEAN,
-
-    word_count INT,
-
-    skills TEXT,
-
-    sections TEXT,
-
-    recommendations TEXT,
-
-    linkedin_detected BOOLEAN DEFAULT 0,
-
-    github_detected BOOLEAN DEFAULT 0,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (resume_id)
-        REFERENCES resumes(resume_id)
-        ON DELETE CASCADE
-
-);
-
+CREATE TABLE IF NOT EXISTS `job_role_skills` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `role_id` int NOT NULL,
+  `skill_name` varchar(100) NOT NULL,
+  `group_id` int DEFAULT NULL,
+  `importance` enum('core','supporting','optional') DEFAULT 'supporting',
+  `weight` decimal(5,2) DEFAULT '1.00',
+  PRIMARY KEY (`id`),
+  KEY `role_id` (`role_id`),
+  CONSTRAINT `job_role_skills_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `job_roles` (`role_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- DEFAULT JOB ROLES
+-- RESUME_RESULTS
 -- ============================================================
 
-INSERT INTO job_roles
-(role_id, role_name, description)
-VALUES
-
-(
-    1,
-    'Python Developer',
-    'Develops applications and backend systems using Python and Python frameworks.'
-),
-
-(
-    2,
-    'Java Developer',
-    'Develops enterprise and backend applications using Java technologies.'
-),
-
-(
-    3,
-    'Frontend Developer',
-    'Develops user interfaces and web applications using frontend technologies.'
-),
-
-(
-    4,
-    'Data Analyst',
-    'Analyzes data and creates business insights using analytics tools.'
-),
-
-(
-    5,
-    'Full Stack Developer',
-    'Develops both frontend and backend applications using multiple technology stacks.'
-),
-
-(
-    6,
-    'Backend Developer',
-    'Develops server-side applications, APIs, databases and backend systems using different technology stacks.'
-);
-
+CREATE TABLE IF NOT EXISTS `resume_results` (
+  `result_id` int NOT NULL AUTO_INCREMENT,
+  `resume_id` int NOT NULL,
+  `role_id` int NOT NULL,
+  `ats_score` decimal(5,2) DEFAULT NULL,
+  `matched_skills` text,
+  `missing_skills` text,
+  `recommended_skills` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `technology_path` varchar(150) DEFAULT NULL,
+  `ai_relevance` decimal(5,2) DEFAULT NULL,
+  `experience_relevance` decimal(5,2) DEFAULT NULL,
+  `project_relevance` decimal(5,2) DEFAULT NULL,
+  `semantic_matches` text,
+  `strengths` text,
+  `weaknesses` text,
+  `ai_recommendations` text,
+  PRIMARY KEY (`result_id`),
+  KEY `resume_id` (`resume_id`),
+  KEY `role_id` (`role_id`),
+  CONSTRAINT `resume_results_ibfk_1` FOREIGN KEY (`resume_id`) REFERENCES `resumes` (`resume_id`) ON DELETE CASCADE,
+  CONSTRAINT `resume_results_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `job_roles` (`role_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- SKILL MASTER DATA
+-- GENERAL_RESULTS
 -- ============================================================
 
-INSERT INTO skills
-(skill_name)
-VALUES
-
-('Python'),
-('Flask'),
-('Django'),
-('FastAPI'),
-('Java'),
-('Spring Boot'),
-('Hibernate'),
-('JDBC'),
-('HTML'),
-('CSS'),
-('JavaScript'),
-('TypeScript'),
-('React'),
-('Angular'),
-('Vue'),
-('Node.js'),
-('Express'),
-('NestJS'),
-('C#'),
-('.NET'),
-('ASP.NET Core'),
-('Entity Framework'),
-('SQL'),
-('MySQL'),
-('PostgreSQL'),
-('MongoDB'),
-('Redis'),
-('REST API'),
-('GraphQL'),
-('Git'),
-('GitHub'),
-('Docker'),
-('Kubernetes'),
-('AWS'),
-('Azure'),
-('Google Cloud'),
-('Linux'),
-('Excel'),
-('Power BI'),
-('Tableau'),
-('Pandas'),
-('NumPy'),
-('Statistics'),
-('Machine Learning'),
-('TensorFlow'),
-('PyTorch'),
-('Bootstrap'),
-('Responsive Design');
-
+CREATE TABLE IF NOT EXISTS `general_results` (
+  `general_result_id` int NOT NULL AUTO_INCREMENT,
+  `resume_id` int NOT NULL,
+  `score` decimal(5,2) DEFAULT NULL,
+  `email_detected` tinyint(1) DEFAULT NULL,
+  `phone_detected` tinyint(1) DEFAULT NULL,
+  `word_count` int DEFAULT NULL,
+  `skills` text,
+  `sections` text,
+  `recommendations` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `linkedin_detected` tinyint(1) DEFAULT '0',
+  `github_detected` tinyint(1) DEFAULT '0',
+  `ai_quality` decimal(5,2) DEFAULT NULL,
+  `summary_quality` decimal(5,2) DEFAULT NULL,
+  `experience_quality` decimal(5,2) DEFAULT NULL,
+  `project_quality` decimal(5,2) DEFAULT NULL,
+  `skills_quality` decimal(5,2) DEFAULT NULL,
+  `clarity_quality` decimal(5,2) DEFAULT NULL,
+  `ai_strengths` text,
+  `ai_weaknesses` text,
+  `ai_recommendations` text,
+  PRIMARY KEY (`general_result_id`),
+  KEY `resume_id` (`resume_id`),
+  CONSTRAINT `general_results_ibfk_1` FOREIGN KEY (`resume_id`) REFERENCES `resumes` (`resume_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ============================================================
--- PYTHON DEVELOPER GROUPS
+-- DEFAULT JOB ROLES AND SKILLS
 -- ============================================================
 
-INSERT INTO role_skill_groups
-(group_id, role_id, group_name, group_type, description)
-VALUES
-
-(
-    1,
-    1,
-    'Python Core',
-    'technology',
-    'Core Python development skills.'
-),
-
-(
-    2,
-    1,
-    'Python Frameworks',
-    'specialization',
-    'Popular Python backend frameworks.'
-),
-
-(
-    3,
-    1,
-    'Common Development',
-    'common',
-    'Common development and database skills.'
-);
-
-
--- ============================================================
--- PYTHON DEVELOPER SKILLS
--- ============================================================
-
-INSERT INTO job_role_skills
-(role_id, group_id, skill_name, importance, weight)
-VALUES
-
-(1, 1, 'Python', 'core', 5.00),
-
-(1, 2, 'Flask', 'supporting', 3.00),
-(1, 2, 'Django', 'supporting', 3.00),
-(1, 2, 'FastAPI', 'supporting', 3.00),
-
-(1, 3, 'SQL', 'core', 4.00),
-(1, 3, 'MySQL', 'supporting', 2.00),
-(1, 3, 'Git', 'supporting', 2.00),
-(1, 3, 'REST API', 'core', 4.00),
-(1, 3, 'Docker', 'optional', 1.00),
-(1, 3, 'AWS', 'optional', 1.00);
-
-
--- ============================================================
--- JAVA DEVELOPER GROUPS
--- ============================================================
-
-INSERT INTO role_skill_groups
-(group_id, role_id, group_name, group_type, description)
-VALUES
-
-(
-    4,
-    2,
-    'Java Core',
-    'technology',
-    'Core Java development skills.'
-),
-
-(
-    5,
-    2,
-    'Java Frameworks',
-    'specialization',
-    'Java backend frameworks and technologies.'
-),
-
-(
-    6,
-    2,
-    'Common Development',
-    'common',
-    'Common database and development skills.'
-);
-
-
--- ============================================================
--- JAVA DEVELOPER SKILLS
--- ============================================================
-
-INSERT INTO job_role_skills
-(role_id, group_id, skill_name, importance, weight)
-VALUES
-
-(2, 4, 'Java', 'core', 5.00),
-
-(2, 5, 'Spring Boot', 'supporting', 4.00),
-(2, 5, 'Hibernate', 'supporting', 3.00),
-(2, 5, 'JDBC', 'supporting', 2.00),
-
-(2, 6, 'SQL', 'core', 4.00),
-(2, 6, 'MySQL', 'supporting', 2.00),
-(2, 6, 'Git', 'supporting', 2.00),
-(2, 6, 'REST API', 'core', 4.00),
-(2, 6, 'Docker', 'optional', 1.00),
-(2, 6, 'AWS', 'optional', 1.00);
-
-
--- ============================================================
--- FRONTEND DEVELOPER GROUPS
--- ============================================================
-
-INSERT INTO role_skill_groups
-(group_id, role_id, group_name, group_type, description)
-VALUES
-
-(
-    7,
-    3,
-    'Frontend Fundamentals',
-    'common',
-    'Core web technologies.'
-),
-
-(
-    8,
-    3,
-    'Frontend Frameworks',
-    'technology',
-    'Popular frontend frameworks and libraries.'
-);
-
-
--- ============================================================
--- FRONTEND DEVELOPER SKILLS
--- ============================================================
-
-INSERT INTO job_role_skills
-(role_id, group_id, skill_name, importance, weight)
-VALUES
-
-(3, 7, 'HTML', 'core', 4.00),
-(3, 7, 'CSS', 'core', 4.00),
-(3, 7, 'JavaScript', 'core', 5.00),
-(3, 7, 'Responsive Design', 'supporting', 2.00),
-(3, 7, 'Git', 'supporting', 2.00),
-
-(3, 8, 'React', 'supporting', 4.00),
-(3, 8, 'Angular', 'supporting', 4.00),
-(3, 8, 'Vue', 'supporting', 4.00),
-(3, 8, 'Bootstrap', 'optional', 1.00);
-
-
--- ============================================================
--- DATA ANALYST GROUPS
--- ============================================================
-
-INSERT INTO role_skill_groups
-(group_id, role_id, group_name, group_type, description)
-VALUES
-
-(
-    9,
-    4,
-    'Data Analysis Core',
-    'common',
-    'Core data analysis skills.'
-),
-
-(
-    10,
-    4,
-    'Data Tools',
-    'technology',
-    'Tools used for analytics and visualization.'
-);
-
-
--- ============================================================
--- DATA ANALYST SKILLS
--- ============================================================
-
-INSERT INTO job_role_skills
-(role_id, group_id, skill_name, importance, weight)
-VALUES
-
-(4, 9, 'SQL', 'core', 5.00),
-(4, 9, 'Python', 'supporting', 4.00),
-(4, 9, 'Statistics', 'core', 4.00),
-
-(4, 10, 'Pandas', 'supporting', 3.00),
-(4, 10, 'NumPy', 'supporting', 2.00),
-(4, 10, 'Excel', 'supporting', 3.00),
-(4, 10, 'Power BI', 'supporting', 3.00),
-(4, 10, 'Tableau', 'supporting', 3.00);
-
-
--- ============================================================
--- FULL STACK DEVELOPER GROUPS
--- ============================================================
-
-INSERT INTO role_skill_groups
-(group_id, role_id, group_name, group_type, description)
-VALUES
-
-(
-    11,
-    5,
-    'Frontend',
-    'common',
-    'Frontend development capabilities.'
-),
-
-(
-    12,
-    5,
-    'Python Backend',
-    'technology',
-    'Python-based backend stack.'
-),
-
-(
-    13,
-    5,
-    'Node.js Backend',
-    'technology',
-    'Node.js-based backend stack.'
-),
-
-(
-    14,
-    5,
-    'Database',
-    'common',
-    'Database technologies used in full stack development.'
-),
-
-(
-    15,
-    5,
-    'Development Tools',
-    'common',
-    'Common development and deployment tools.'
-);
-
-
--- ============================================================
--- FULL STACK DEVELOPER SKILLS
--- ============================================================
-
-INSERT INTO job_role_skills
-(role_id, group_id, skill_name, importance, weight)
-VALUES
-
--- Frontend
-
-(5, 11, 'HTML', 'core', 3.00),
-(5, 11, 'CSS', 'core', 3.00),
-(5, 11, 'JavaScript', 'core', 4.00),
-(5, 11, 'React', 'supporting', 3.00),
-(5, 11, 'Angular', 'supporting', 3.00),
-(5, 11, 'Vue', 'supporting', 3.00),
-
--- Python Backend
-
-(5, 12, 'Python', 'core', 4.00),
-(5, 12, 'Flask', 'supporting', 3.00),
-(5, 12, 'Django', 'supporting', 3.00),
-(5, 12, 'FastAPI', 'supporting', 3.00),
-
--- Node.js Backend
-
-(5, 13, 'Node.js', 'core', 4.00),
-(5, 13, 'Express', 'supporting', 3.00),
-(5, 13, 'NestJS', 'supporting', 3.00),
-(5, 13, 'TypeScript', 'supporting', 2.00),
-
--- Database
-
-(5, 14, 'SQL', 'core', 3.00),
-(5, 14, 'MySQL', 'supporting', 2.00),
-(5, 14, 'PostgreSQL', 'supporting', 2.00),
-(5, 14, 'MongoDB', 'supporting', 2.00),
-
--- Tools
-
-(5, 15, 'REST API', 'core', 3.00),
-(5, 15, 'Git', 'supporting', 2.00),
-(5, 15, 'Docker', 'optional', 1.00),
-(5, 15, 'AWS', 'optional', 1.00);
-
-
--- ============================================================
--- BACKEND DEVELOPER GROUPS
--- ============================================================
-
-INSERT INTO role_skill_groups
-(group_id, role_id, group_name, group_type, description)
-VALUES
-
-(
-    16,
-    6,
-    'Common Backend',
-    'common',
-    'Backend concepts and technologies common to multiple stacks.'
-),
-
-(
-    17,
-    6,
-    'Python Backend',
-    'technology',
-    'Backend development using Python.'
-),
-
-(
-    18,
-    6,
-    'Node.js Backend',
-    'technology',
-    'Backend development using JavaScript and Node.js.'
-),
-
-(
-    19,
-    6,
-    'Java Backend',
-    'technology',
-    'Backend development using Java.'
-),
-
-(
-    20,
-    6,
-    '.NET Backend',
-    'technology',
-    'Backend development using C# and .NET.'
-);
-
-
--- ============================================================
--- BACKEND DEVELOPER SKILLS
--- ============================================================
-
-INSERT INTO job_role_skills
-(role_id, group_id, skill_name, importance, weight)
-VALUES
-
--- Common Backend
-
-(6, 16, 'REST API', 'core', 5.00),
-(6, 16, 'SQL', 'core', 4.00),
-(6, 16, 'Git', 'supporting', 2.00),
-(6, 16, 'Authentication', 'supporting', 2.00),
-(6, 16, 'Docker', 'optional', 1.00),
-
--- Python Backend
-
-(6, 17, 'Python', 'core', 5.00),
-(6, 17, 'Flask', 'supporting', 3.00),
-(6, 17, 'Django', 'supporting', 3.00),
-(6, 17, 'FastAPI', 'supporting', 3.00),
-
--- Node.js Backend
-
-(6, 18, 'Node.js', 'core', 5.00),
-(6, 18, 'Express', 'supporting', 3.00),
-(6, 18, 'NestJS', 'supporting', 3.00),
-(6, 18, 'JavaScript', 'supporting', 3.00),
-(6, 18, 'TypeScript', 'supporting', 2.00),
-
--- Java Backend
-
-(6, 19, 'Java', 'core', 5.00),
-(6, 19, 'Spring Boot', 'supporting', 4.00),
-(6, 19, 'Hibernate', 'supporting', 3.00),
-(6, 19, 'JDBC', 'supporting', 2.00),
-
--- .NET Backend
-
-(6, 20, 'C#', 'core', 5.00),
-(6, 20, '.NET', 'core', 4.00),
-(6, 20, 'ASP.NET Core', 'supporting', 4.00),
-(6, 20, 'Entity Framework', 'supporting', 3.00);
-
-
--- ============================================================
--- END OF SCHEMA
--- ============================================================
+INSERT IGNORE INTO job_roles (role_id, role_name, description) VALUES
+(1, 'Python Developer', 'Develops Python applications'),
+(2, 'Java Developer', 'Java Backend Development'),
+(3, 'Frontend Developer', 'Frontend Web Development'),
+(4, 'Data Analyst', 'Data Analysis'),
+(5, 'Full Stack Developer', 'Full Stack Web Development'),
+(6, 'Backend Developer', 'Develops server-side applications, APIs, databases and backend systems using different technology stacks.');
+
+INSERT IGNORE INTO role_skill_groups (group_id, role_id, group_name, group_type, description) VALUES
+(1, 6, 'Common Backend', 'common', 'Skills commonly used across backend development stacks.'),
+(2, 6, 'Python Backend', 'technology', 'Backend development using Python technologies.'),
+(3, 6, 'Node.js Backend', 'technology', 'Backend development using Node.js technologies.'),
+(4, 6, 'Java Backend', 'technology', 'Backend development using Java technologies.'),
+(5, 6, '.NET Backend', 'technology', 'Backend development using C# and .NET technologies.'),
+(6, 1, 'Python Core', 'common', 'Core Python programming skills.'),
+(8, 1, 'Database and API', 'common', 'Database and API skills used in Python development.'),
+(9, 1, 'Development Tools', 'common', 'Tools and technologies commonly used in development.'),
+(10, 2, 'Java Core', 'common', 'Core Java programming skills.'),
+(11, 2, 'Java Frameworks', 'technology', 'Java frameworks and enterprise technologies.'),
+(12, 2, 'Database and API', 'common', 'Database and API skills used in Java development.'),
+(13, 2, 'Development Tools', 'common', 'Tools and technologies commonly used in Java development.'),
+(14, 3, 'Frontend Fundamentals', 'common', 'Core web technologies required for frontend development.'),
+(15, 3, 'React', 'technology', 'Frontend development using React.'),
+(16, 3, 'Angular', 'technology', 'Frontend development using Angular.'),
+(17, 3, 'Vue', 'technology', 'Frontend development using Vue.'),
+(18, 3, 'Frontend Tools', 'common', 'Common frontend development tools and practices.'),
+(19, 4, 'Data Analysis Core', 'common', 'Core skills required for data analysis.'),
+(20, 4, 'Python Analytics', 'technology', 'Data analysis using Python and its ecosystem.'),
+(21, 4, 'Business Intelligence', 'technology', 'Business intelligence and reporting tools.'),
+(22, 4, 'Data Visualization', 'technology', 'Tools used for data visualization and reporting.'),
+(23, 4, 'Data Tools', 'common', 'Common tools used in data analysis workflows.'),
+(24, 5, 'Frontend Core', 'common', 'Core frontend technologies used in full stack development.'),
+(25, 5, 'React Frontend', 'technology', 'Full stack development using React for the frontend.'),
+(26, 5, 'Angular Frontend', 'technology', 'Full stack development using Angular for the frontend.'),
+(27, 5, 'Python Backend', 'technology', 'Full stack development using Python backend technologies.'),
+(28, 5, 'Node.js Backend', 'technology', 'Full stack development using Node.js backend technologies.'),
+(29, 5, 'Java Backend', 'technology', 'Full stack development using Java backend technologies.'),
+(30, 5, 'Database', 'common', 'Database technologies used in full stack applications.'),
+(31, 5, 'Development and Deployment', 'common', 'Common development, API and deployment technologies.'),
+(35, 1, 'Django', 'technology', NULL),
+(36, 1, 'Flask', 'technology', NULL),
+(37, 1, 'FastAPI', 'technology', NULL);
+
+INSERT IGNORE INTO job_role_skills (id, role_id, skill_name, group_id, importance, weight) VALUES
+(34, 6, 'REST API', 1, 'core', '5.00'),
+(35, 6, 'SQL', 1, 'core', '4.00'),
+(36, 6, 'Git', 1, 'supporting', '2.00'),
+(37, 6, 'Authentication', 1, 'supporting', '2.00'),
+(38, 6, 'Docker', 1, 'optional', '1.00'),
+(39, 6, 'Python', 2, 'core', '5.00'),
+(40, 6, 'Flask', 2, 'supporting', '3.00'),
+(41, 6, 'Django', 2, 'supporting', '3.00'),
+(42, 6, 'FastAPI', 2, 'supporting', '3.00'),
+(43, 6, 'Node.js', 3, 'core', '5.00'),
+(44, 6, 'Express', 3, 'supporting', '3.00'),
+(45, 6, 'NestJS', 3, 'supporting', '3.00'),
+(46, 6, 'JavaScript', 3, 'supporting', '3.00'),
+(47, 6, 'TypeScript', 3, 'supporting', '2.00'),
+(48, 6, 'Java', 4, 'core', '5.00'),
+(49, 6, 'Spring Boot', 4, 'supporting', '4.00'),
+(50, 6, 'Hibernate', 4, 'supporting', '3.00'),
+(51, 6, 'JDBC', 4, 'supporting', '2.00'),
+(52, 6, 'C#', 5, 'core', '5.00'),
+(53, 6, '.NET', 5, 'core', '4.00'),
+(54, 6, 'ASP.NET Core', 5, 'supporting', '4.00'),
+(55, 6, 'Entity Framework', 5, 'supporting', '3.00'),
+(56, 1, 'Python', 6, 'core', '5.00'),
+(57, 1, 'Flask', 36, 'core', '5.00'),
+(58, 1, 'Django', 35, 'core', '5.00'),
+(59, 1, 'FastAPI', 37, 'core', '5.00'),
+(60, 1, 'SQL', 8, 'core', '4.00'),
+(61, 1, 'MySQL', 8, 'supporting', '2.00'),
+(62, 1, 'PostgreSQL', 8, 'supporting', '2.00'),
+(63, 1, 'REST API', 8, 'core', '4.00'),
+(64, 1, 'Git', 9, 'supporting', '2.00'),
+(65, 1, 'Docker', 9, 'optional', '1.00'),
+(66, 1, 'AWS', 9, 'optional', '1.00'),
+(67, 1, 'Linux', 9, 'supporting', '2.00'),
+(68, 2, 'Java', 10, 'core', '5.00'),
+(69, 2, 'Spring Boot', 11, 'core', '4.00'),
+(70, 2, 'Hibernate', 11, 'supporting', '3.00'),
+(71, 2, 'JDBC', 11, 'supporting', '2.00'),
+(72, 2, 'SQL', 12, 'core', '4.00'),
+(73, 2, 'MySQL', 12, 'supporting', '2.00'),
+(74, 2, 'PostgreSQL', 12, 'supporting', '2.00'),
+(75, 2, 'REST API', 12, 'core', '4.00'),
+(76, 2, 'Git', 13, 'supporting', '2.00'),
+(77, 2, 'Docker', 13, 'optional', '1.00'),
+(78, 2, 'AWS', 13, 'optional', '1.00'),
+(79, 2, 'Linux', 13, 'supporting', '2.00'),
+(80, 3, 'HTML', 14, 'core', '4.00'),
+(81, 3, 'CSS', 14, 'core', '4.00'),
+(82, 3, 'JavaScript', 14, 'core', '5.00'),
+(83, 3, 'Responsive Design', 14, 'supporting', '2.00'),
+(84, 3, 'React', 15, 'core', '5.00'),
+(85, 3, 'Angular', 16, 'core', '5.00'),
+(86, 3, 'Vue', 17, 'core', '5.00'),
+(87, 3, 'Git', 18, 'supporting', '2.00'),
+(88, 3, 'Bootstrap', 18, 'optional', '1.00'),
+(89, 3, 'REST API', 18, 'supporting', '2.00'),
+(90, 3, 'TypeScript', 18, 'supporting', '3.00'),
+(91, 4, 'SQL', 19, 'core', '5.00'),
+(92, 4, 'Statistics', 19, 'core', '5.00'),
+(93, 4, 'Python', 20, 'supporting', '4.00'),
+(94, 4, 'Pandas', 20, 'supporting', '4.00'),
+(95, 4, 'NumPy', 20, 'supporting', '3.00'),
+(96, 4, 'Excel', 21, 'supporting', '4.00'),
+(97, 4, 'Power BI', 21, 'supporting', '4.00'),
+(98, 4, 'Tableau', 22, 'supporting', '4.00'),
+(99, 4, 'Power BI', 22, 'supporting', '3.00'),
+(100, 4, 'Git', 23, 'optional', '1.00'),
+(101, 4, 'MySQL', 23, 'supporting', '2.00'),
+(102, 5, 'HTML', 24, 'core', '4.00'),
+(103, 5, 'CSS', 24, 'core', '4.00'),
+(104, 5, 'JavaScript', 24, 'core', '5.00'),
+(105, 5, 'React', 25, 'core', '5.00'),
+(106, 5, 'Angular', 26, 'core', '5.00'),
+(107, 5, 'Python', 27, 'core', '4.00'),
+(108, 5, 'Flask', 27, 'supporting', '3.00'),
+(109, 5, 'Django', 27, 'supporting', '3.00'),
+(110, 5, 'FastAPI', 27, 'supporting', '3.00'),
+(111, 5, 'Node.js', 28, 'core', '4.00'),
+(112, 5, 'Express', 28, 'supporting', '3.00'),
+(113, 5, 'NestJS', 28, 'supporting', '3.00'),
+(114, 5, 'TypeScript', 28, 'supporting', '2.00'),
+(115, 5, 'Java', 29, 'core', '4.00'),
+(116, 5, 'Spring Boot', 29, 'supporting', '3.00'),
+(117, 5, 'Hibernate', 29, 'supporting', '2.00'),
+(118, 5, 'SQL', 30, 'core', '4.00'),
+(119, 5, 'MySQL', 30, 'supporting', '2.00'),
+(120, 5, 'PostgreSQL', 30, 'supporting', '2.00'),
+(121, 5, 'MongoDB', 30, 'supporting', '2.00'),
+(122, 5, 'REST API', 31, 'core', '4.00'),
+(123, 5, 'Git', 31, 'supporting', '2.00'),
+(124, 5, 'Docker', 31, 'optional', '1.00'),
+(125, 5, 'AWS', 31, 'optional', '1.00');

@@ -92,6 +92,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // -----------------------------------------
+    // Copy text buttons
+    // -----------------------------------------
+
+    document.querySelectorAll("[data-copy]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            var target = document.querySelector(button.getAttribute("data-copy"));
+
+            if (!target || !navigator.clipboard) {
+                return;
+            }
+
+            navigator.clipboard.writeText(target.textContent.trim()).then(function () {
+                var original = button.innerHTML;
+                button.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+                setTimeout(function () {
+                    button.innerHTML = original;
+                }, 1500);
+            });
+        });
+    });
+
+
+    // -----------------------------------------
     // History search + filter
     // -----------------------------------------
 

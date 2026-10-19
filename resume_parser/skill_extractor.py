@@ -174,7 +174,141 @@ SKILL_ALIASES = {
     "Excel": ["MS Excel", "Microsoft Excel"],
     "Statistics": ["Statistical Analysis", "Hypothesis Testing"],
     "Scikit-learn": ["sklearn", "scikit learn"],
-    "CI/CD": ["CI CD", "GitHub Actions"],
+    "CI/CD": ["CI CD", "GitHub Actions", "GitLab CI"],
+
+    # DevOps
+    "Shell Scripting": ["Bash", "Shell Script", "Bash Scripting", "PowerShell"],
+    "Networking": ["TCP/IP", "DNS", "Computer Networking"],
+
+    # Android
+    "Android SDK": ["Android Studio", "Android Development", "Android"],
+    "Jetpack Compose": ["Jetpack"],
+    "Coroutines": ["Kotlin Coroutines"],
+
+    # ML / Data
+    "Jupyter": ["Jupyter Notebook", "JupyterLab"],
+    "XGBoost": ["LightGBM"],
+
+    # Testing
+    "Manual Testing": ["Functional Testing", "Regression Testing", "Black Box Testing"],
+    "Test Cases": ["Test Case", "Test Scenarios", "Test Plan", "Test Plans"],
+    "SDLC": ["STLC", "Software Development Life Cycle"],
+    "Bug Tracking": ["Jira", "Bugzilla", "Defect Tracking", "Bug Reporting"],
+    "API Testing": ["Rest Assured", "RestAssured"],
+}
+
+
+def canonical_skill(name):
+    """
+    Maps another name of a skill to its main name:
+    "ReactJS" -> "React", "Postgres" -> "PostgreSQL".
+    Unknown names are returned unchanged.
+    """
+
+    key = name.strip().lower()
+
+    for canonical, aliases in SKILL_ALIASES.items():
+
+        if key == canonical.lower() or key in (a.lower() for a in aliases):
+            return canonical
+
+    return name.strip()
+
+
+def is_known_skill(name):
+    """
+    True if the name is a skill we know (main name or other name).
+    """
+
+    key = name.strip().lower()
+
+    return any(
+        key == canonical.lower() or key in (a.lower() for a in aliases)
+        for canonical, aliases in SKILL_ALIASES.items()
+    )
+
+
+def skill_in_text(text, skill):
+    """
+    True if the skill (or one of its other names)
+    appears in the text as a whole word.
+    """
+
+    text = text.lower()
+
+    names = [skill] + SKILL_ALIASES.get(skill, [])
+
+    # Aliases are stored by canonical name, so also look up
+    # case-insensitively (database skills may differ in case)
+
+    for canonical, aliases in SKILL_ALIASES.items():
+
+        if canonical.lower() == skill.lower():
+            names += aliases
+
+    return any(_contains_word(text, name) for name in names)
+
+
+def find_skill_evidence(text, skills):
+    """
+    For each skill, checks whether it is actually used in the
+    Experience / Projects sections or only listed somewhere else.
+
+    Returns {"python": "used", "docker": "listed", ...}
+
+    If the resume has no Experience or Projects section,
+    every skill counts as "used" (we cannot judge, so no penalty).
+    """
+
+    # Imported here to avoid a circular import
+
+    from resume_parser.sections import split_sections
+
+    sections = split_sections(text)
+
+    work_text = (
+        sections.get("experience", "")
+        + "\n"
+        + sections.get("projects", "")
+    )
+
+    evidence = {}
+
+    for skill in skills:
+
+        # Using a framework proves the language too,
+        # e.g. Spring Boot in a project -> Java is used
+
+        proof = [skill] + IMPLIED_BY.get(skill.lower(), [])
+
+        if not work_text.strip() or any(skill_in_text(work_text, name) for name in proof):
+            evidence[skill.lower()] = "used"
+        else:
+            evidence[skill.lower()] = "listed"
+
+    return evidence
+
+
+# Skills whose use in a project also proves the key skill
+
+IMPLIED_BY = {
+    "java": ["Spring Boot", "Hibernate", "JDBC", "Maven", "JUnit"],
+    "python": ["Django", "Flask", "FastAPI", "Pandas", "NumPy", "PyTorch", "TensorFlow", "Scikit-learn"],
+    "javascript": ["React", "Node.js", "Express", "Angular", "Vue", "Next.js", "TypeScript"],
+    "typescript": ["Angular", "NestJS"],
+    "node.js": ["Express", "NestJS"],
+    "react": ["Next.js", "Redux"],
+    "html": ["React", "Angular", "Vue"],
+    "css": ["Tailwind CSS", "Bootstrap"],
+    "sql": ["MySQL", "PostgreSQL", "SQLite", "Oracle"],
+    "c#": [".NET", "ASP.NET Core", "Entity Framework"],
+    ".net": ["ASP.NET Core", "Entity Framework"],
+    "git": ["GitHub"],
+    "machine learning": ["Scikit-learn", "TensorFlow", "PyTorch", "Deep Learning"],
+    "deep learning": ["TensorFlow", "PyTorch", "Keras"],
+    "kotlin": ["Jetpack Compose"],
+    "dart": ["Flutter"],
+    "rest api": ["FastAPI", "Express", "Spring Boot"],
 }
 
 

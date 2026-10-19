@@ -55,6 +55,12 @@
                 ATS Analysis
             </a>
 
+            <a href="/job-match"
+               class="{% if request.path == '/job-match' or request.path.startswith('/history/jd') %}active{% endif %}">
+                <i class="fa-solid fa-handshake"></i>
+                Job Match
+            </a>
+
             <a href="/general-analyzer"
                class="{% if request.path == '/general-analyzer' or request.path.startswith('/history/general') %}active{% endif %}">
                 <i class="fa-solid fa-wand-magic-sparkles"></i>

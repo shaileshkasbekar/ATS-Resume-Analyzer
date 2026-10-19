@@ -1,75 +1,7 @@
 import re
 
 from resume_parser.skill_extractor import extract_skills
-
-
-# --------------------------------
-# Section headings to look for
-# --------------------------------
-
-SECTIONS = {
-
-    "education": [
-        "education",
-        "academic qualification",
-        "academic qualifications",
-        "qualification",
-        "qualifications",
-        "academic background",
-        "academics"
-    ],
-
-    "experience": [
-        "experience",
-        "work experience",
-        "professional experience",
-        "employment",
-        "employment history",
-        "internship",
-        "internships"
-    ],
-
-    "projects": [
-        "projects",
-        "project",
-        "academic projects",
-        "personal projects",
-        "key projects"
-    ],
-
-    "skills": [
-        "skills",
-        "technical skills",
-        "skills & technologies",
-        "technical skills & technologies",
-        "core competencies",
-        "technologies"
-    ],
-
-    "summary": [
-        "summary",
-        "professional summary",
-        "profile",
-        "career objective",
-        "objective",
-        "about me"
-    ],
-
-    "certifications": [
-        "certifications",
-        "certification",
-        "certificates",
-        "courses"
-    ],
-
-    "achievements": [
-        "achievements",
-        "accomplishments",
-        "awards",
-        "honors",
-        "honours"
-    ]
-}
+from resume_parser.sections import SECTIONS, is_heading
 
 
 # --------------------------------
@@ -106,43 +38,6 @@ WEAK_PHRASES = [
 
 
 BULLET_CHARS = "•-*▪●◦–·>✓■□➢"
-
-
-def _is_heading(line, keywords):
-    """
-    A heading is a short line (like "TECHNICAL SKILLS" or
-    "Projects:") that contains one of the keywords.
-    """
-
-    # "Projects | see GitHub" or "Skills: Python, Java" -> keep the first part
-
-    # Headings start with a letter; bullet points start with a symbol
-
-    line = line.strip()
-
-    if not line or not line[0].isalpha():
-        return False
-
-    line = re.split(r"[|:–—]", line)[0]
-
-    if not line.strip():
-        return False
-
-    clean = re.sub(r"[^a-z& ]", " ", line.lower())
-    clean = re.sub(r"\s+", " ", clean).strip()
-
-    if not clean or len(clean.split()) > 5:
-        return False
-
-    if re.search(r"\d", line):
-        return False
-
-    for keyword in keywords:
-
-        if re.search(r"(^|\s|&)" + re.escape(keyword) + r"($|\s|&)", clean):
-            return True
-
-    return False
 
 
 def _content_checks(lines, text_lower):
@@ -238,7 +133,7 @@ def analyze_resume(text):
     for section, keywords in SECTIONS.items():
 
         section_result[section] = any(
-            _is_heading(line, keywords)
+            is_heading(line, keywords)
             for line in lines
         )
 

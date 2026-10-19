@@ -6,13 +6,14 @@ import json
 import uuid
 
 from config import Config
-from models.database import get_db_connection
+from models.database import get_db_connection, table_columns
 
 from resume_parser.pdf_reader import extract_text_from_pdf
-from resume_parser.skill_extractor import extract_skills
+from resume_parser.skill_extractor import extract_skills, find_skill_evidence
 from resume_parser.ats_score import calculate_ats_score
 from resume_parser.ai_analyzer import analyze_resume_with_ai
 from resume_parser.ai_client import get_score
+from resume_parser.recommendation import build_learning_plan
 
 
 # =========================================
@@ -275,6 +276,19 @@ def upload_resume():
 
 
         # =========================================
+        # SKILL EVIDENCE
+        # =========================================
+
+        # "used" = appears in projects / experience,
+        # "listed" = only in the skills list
+
+        skill_evidence = find_skill_evidence(
+            text,
+            skills
+        )
+
+
+        # =========================================
         # RULE-BASED ATS ENGINE
         # =========================================
 
@@ -287,7 +301,8 @@ def upload_resume():
             detected_path
         ) = calculate_ats_score(
             skills,
-            role_skill_groups
+            role_skill_groups,
+            skill_evidence
         )
 
 
@@ -761,7 +776,10 @@ def upload_resume():
         )
 
 
-        recommended_skills_text = ", ".join(
+        # Saved as JSON because recommendations
+        # can contain commas
+
+        recommended_skills_text = json.dumps(
             final_recommendations
         )
 
@@ -839,62 +857,46 @@ def upload_resume():
             # Save Hybrid ATS Result
             # -----------------------------------------
 
-            result_query = """
-            INSERT INTO resume_results
-            (
-                resume_id,
-                role_id,
-                ats_score,
-                matched_skills,
-                missing_skills,
-                recommended_skills,
-                technology_path,
-                ai_relevance,
-                experience_relevance,
-                project_relevance,
-                semantic_matches,
-                strengths,
-                weaknesses,
-                ai_recommendations
+            result_data = {
+                "resume_id": resume_id,
+                "role_id": role_id,
+                "ats_score": final_score,
+                "matched_skills": matched_skills_text,
+                "missing_skills": missing_skills_text,
+                "recommended_skills": recommended_skills_text,
+                "technology_path": technology_path,
+                "ai_relevance": ai_relevance,
+                "experience_relevance": experience_relevance,
+                "project_relevance": project_relevance,
+                "semantic_matches": semantic_matches_text,
+                "strengths": strengths_text,
+                "weaknesses": weaknesses_text,
+                "ai_recommendations": ai_recommendations_text
+            }
+
+
+            # Saved only after the database upgrade
+            # adds the skill_evidence column
+
+            if "skill_evidence" in table_columns(cursor, "resume_results"):
+
+                result_data["skill_evidence"] = json.dumps(
+                    skill_evidence
+                )
+
+
+            result_query = (
+                "INSERT INTO resume_results ("
+                + ", ".join(result_data)
+                + ") VALUES ("
+                + ", ".join(["%s"] * len(result_data))
+                + ")"
             )
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
-            )
-            """
 
 
             cursor.execute(
                 result_query,
-                (
-                    resume_id,
-                    role_id,
-                    final_score,
-                    matched_skills_text,
-                    missing_skills_text,
-                    recommended_skills_text,
-                    technology_path,
-                    ai_relevance,
-                    experience_relevance,
-                    project_relevance,
-                    semantic_matches_text,
-                    strengths_text,
-                    weaknesses_text,
-                    ai_recommendations_text
-                )
+                tuple(result_data.values())
             )
 
 
@@ -962,7 +964,14 @@ def upload_resume():
 
             ai_recommendations=ai_recommendations,
 
-            filename=filename
+            filename=filename,
+
+            skill_evidence=skill_evidence,
+
+            learning_plan=build_learning_plan(
+                final_missing_skills,
+                role_skill_groups
+            )
         )
 
 

@@ -11,3 +11,17 @@ def get_db_connection():
     )
 
     return connection
+
+
+def table_columns(cursor, table):
+    """
+    Column names of a table, or an empty set if the table
+    does not exist yet (database upgrade not run).
+    """
+
+    try:
+        cursor.execute(f"SHOW COLUMNS FROM `{table}`")
+    except mysql.connector.Error:
+        return set()
+
+    return {row[0] if isinstance(row, tuple) else row["Field"] for row in cursor.fetchall()}

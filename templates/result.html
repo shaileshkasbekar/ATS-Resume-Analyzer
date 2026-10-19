@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% from "_macros.html" import ring, meter, chips, icon_list, verdict, level %}
+{% from "_macros.html" import ring, meter, chips, icon_list, verdict, level, learning_plan_card %}
 
 {% block title %}ATS Result{% endblock %}
 
@@ -69,7 +69,31 @@
                 <h2><i class="fa-solid fa-circle-check"></i> Matched skills</h2>
                 <span class="badge tint-good">{{ matched_skills|length }}</span>
             </div>
+            {% if matched_skills and skill_evidence %}
+
+            <div class="chips">
+                {% for skill in matched_skills %}
+                {% if skill_evidence.get(skill|lower) == "listed" %}
+                <span class="chip" title="Only listed — not shown in your projects or experience">
+                    <i class="fa-solid fa-list"></i> {{ skill }}
+                </span>
+                {% else %}
+                <span class="chip chip-good" title="Used in your projects or experience">
+                    <i class="fa-solid fa-check-double"></i> {{ skill }}
+                </span>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <p class="muted small" style="margin-top: 14px;">
+                <i class="fa-solid fa-check-double" style="color: var(--good);"></i> used in projects/experience
+                &nbsp;·&nbsp;
+                <i class="fa-solid fa-list"></i> only listed (partial credit) — mention these in a project to score higher
+            </p>
+
+            {% else %}
             {{ chips(matched_skills, "good", "fa-check", "No matching skills detected.") }}
+            {% endif %}
         </div>
 
         <div class="card">
@@ -159,6 +183,11 @@
         </div>
 
     </div>
+
+
+    <!-- ================= LEARNING PLAN ================= -->
+
+    {{ learning_plan_card(learning_plan) }}
 
 
     <!-- ================= RECOMMENDATIONS ================= -->
