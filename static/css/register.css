@@ -1,0 +1,131 @@
+/* Whole Page */
+body{
+
+    margin:0;
+    padding:0;
+
+    font-family:Arial, sans-serif;
+
+    background:#f4f6f9;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    height:100vh;
+}
+
+/* Register Card */
+.register-container{
+
+    width:400px;
+
+    background:white;
+
+    padding:35px;
+
+    border-radius:10px;
+
+    box-shadow:0px 5px 15px rgba(0,0,0,0.2);
+
+    text-align:center;
+}
+
+/* Main Heading */
+.register-container h1{
+
+    color:#007BFF;
+
+    margin-bottom:10px;
+}
+
+/* Registration Heading */
+.register-container h2{
+
+    color:#333;
+
+    margin-bottom:25px;
+}
+
+/* Labels */
+label{
+
+    display:block;
+
+    text-align:left;
+
+    margin-bottom:8px;
+
+    font-weight:bold;
+}
+
+/* Input Boxes */
+input[type="text"],
+input[type="email"],
+input[type="password"]{
+
+    width:100%;
+
+    padding:12px;
+
+    margin-bottom:20px;
+
+    border:1px solid #ccc;
+
+    border-radius:5px;
+
+    box-sizing:border-box;
+
+    font-size:16px;
+}
+
+/* Register Button */
+input[type="submit"]{
+
+    width:100%;
+
+    padding:12px;
+
+    background:#007BFF;
+
+    color:white;
+
+    border:none;
+
+    border-radius:5px;
+
+    font-size:16px;
+
+    cursor:pointer;
+
+    transition:0.3s;
+}
+
+/* Hover Effect */
+input[type="submit"]:hover{
+
+    background:#0056b3;
+}
+
+/* Bottom Text */
+p{
+
+    margin-top:20px;
+}
+
+/* Link */
+a{
+
+    color:#007BFF;
+
+    text-decoration:none;
+
+    font-weight:bold;
+}
+
+a:hover{
+
+    text-decoration:underline;
+}

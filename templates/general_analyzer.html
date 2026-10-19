@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>General Resume Analyzer</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/general_analyzer.css') }}">
+</head>
+
+<body>
+
+{% include "_flash.html" %}
+
+<div class="container">
+
+    <h1>General Resume Analyzer</h1>
+
+    <p class="subtitle">
+        Analyze your resume and get a general resume quality score.
+    </p>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <label for="resume">
+            Select Resume (PDF)
+        </label>
+
+        <input
+            type="file"
+            id="resume"
+            name="resume"
+            accept=".pdf"
+            required
+        >
+
+        <button type="submit">
+            Analyze Resume
+        </button>
+
+    </form>
+
+    <a href="/dashboard" class="back-btn">
+        Back to Dashboard
+    </a>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Register</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/register.css') }}">
+</head>
+
+<body>
+
+{% include "_flash.html" %}
+
+<div class="register-container">
+
+    <h1>ATS Resume Analyzer</h1>
+
+    <h2>User Registration</h2>
+
+    <form method="POST">
+
+        <label>Full Name</label>
+        <input type="text" name="fullname" required>
+
+        <label>Email</label>
+        <input type="email" name="email" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
+        <input type="submit" value="Register">
+
+    </form>
+
+    <p>
+        Already have an account?
+        <a href="/">Login</a>
+    </p>
+
+</div>
+
+</body>
+
+</html>

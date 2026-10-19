@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Resume History</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/history.css') }}">
+
+</head>
+
+<body>
+
+{% include "_flash.html" %}
+
+    <div class="container">
+
+        <h1>Resume History</h1>
+
+        <table>
+
+            <tr>
+
+                <th>Resume File</th>
+
+                <th>Analysis Type</th>
+
+                <th>Job Role</th>
+
+                <th>Score</th>
+
+                <th>Upload Date</th>
+
+                <th>Action</th>
+
+            </tr>
+
+
+            {% for resume in history_data %}
+
+            <tr>
+
+                <td>
+                    {{ resume.file_name }}
+                </td>
+
+                <td>
+                    {{ resume.analysis_type }}
+                </td>
+
+                <td>
+                    {{ resume.role_name }}
+                </td>
+
+                <td>
+                    {{ resume.score }}%
+                </td>
+
+                <td>
+                    {{ resume.upload_date }}
+                </td>
+
+                <td>
+
+                    {% if resume.analysis_type == "General Analysis" %}
+
+                        <a href="/history/general/{{ resume.analysis_id }}"
+                           class="action-btn view-btn">
+                            View
+                        </a>
+
+                        <form
+                            action="/history/delete/general/{{ resume.analysis_id }}"
+                            method="POST"
+                            style="display:inline;">
+
+                            <button
+                                type="submit"
+                                class="action-btn delete-btn"
+                                onclick="return confirm('Are you sure you want to delete this analysis?');">
+
+                                Delete
+
+                            </button>
+
+                        </form>
+
+                    {% else %}
+
+                        <a href="/history/ats/{{ resume.analysis_id }}"
+                           class="action-btn view-btn">
+                            View
+                        </a>
+
+                        <form
+                            action="/history/delete/ats/{{ resume.analysis_id }}"
+                            method="POST"
+                            style="display:inline;">
+
+                            <button
+                                type="submit"
+                                class="action-btn delete-btn"
+                                onclick="return confirm('Are you sure you want to delete this analysis?');">
+
+                                Delete
+
+                            </button>
+
+                        </form>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+
+        <a href="/dashboard" class="back-btn">
+
+            Back to Dashboard
+
+        </a>
+
+    </div>
+
+</body>
+
+</html>

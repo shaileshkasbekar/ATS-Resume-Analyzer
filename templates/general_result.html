@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>General Resume Analysis</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/general_result.css') }}">
+
+</head>
+
+<body>
+
+{% include "_flash.html" %}
+
+<div class="container">
+
+    <h1>General Resume Analysis</h1>
+
+    <p class="filename">
+        Resume: {{ filename }}
+    </p>
+
+
+    <!-- ================================= -->
+    <!-- FINAL SCORE -->
+    <!-- ================================= -->
+
+    <div class="score">
+
+        <h2>General Resume Score</h2>
+
+        <div class="score-number">
+            {{ result.score }}%
+        </div>
+
+        <div class="progress">
+
+            <div class="progress-bar"
+                 style="width: {{ result.score }}%;">
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- SCORE BREAKDOWN -->
+    <!-- ================================= -->
+
+    <div class="card score-breakdown">
+
+        <h2>📊 Score Breakdown</h2>
+
+        <div class="score-grid">
+
+            <div class="score-box">
+
+                <h3>Rule-Based Score</h3>
+
+                <strong>
+                    {{ result.rule_score }}%
+                </strong>
+
+                <p>
+                    Based on resume structure,
+                    contact information, sections,
+                    skills and basic checks.
+                </p>
+
+            </div>
+
+
+            <div class="score-box">
+
+                <h3>AI Resume Quality</h3>
+
+                <strong>
+                    {{ result.ai_quality }}%
+                </strong>
+
+                <p>
+                    AI evaluation of the overall
+                    quality of your resume.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- AI QUALITY ANALYSIS -->
+    <!-- ================================= -->
+
+    <div class="card">
+
+        <h2>🤖 AI Resume Quality Analysis</h2>
+
+        <div class="ai-score-grid">
+
+
+            <div class="ai-score-box">
+
+                <h3>Summary</h3>
+
+                <strong>
+                    {{ result.summary_quality }}%
+                </strong>
+
+            </div>
+
+
+            <div class="ai-score-box">
+
+                <h3>Experience</h3>
+
+                <strong>
+                    {{ result.experience_quality }}%
+                </strong>
+
+            </div>
+
+
+            <div class="ai-score-box">
+
+                <h3>Projects</h3>
+
+                <strong>
+                    {{ result.project_quality }}%
+                </strong>
+
+            </div>
+
+
+            <div class="ai-score-box">
+
+                <h3>Skills</h3>
+
+                <strong>
+                    {{ result.skills_quality }}%
+                </strong>
+
+            </div>
+
+
+            <div class="ai-score-box">
+
+                <h3>Clarity</h3>
+
+                <strong>
+                    {{ result.clarity_quality }}%
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- AI STRENGTHS -->
+    <!-- ================================= -->
+
+    <div class="card strengths">
+
+        <h2>💪 AI Detected Strengths</h2>
+
+        {% if result.ai_strengths %}
+
+            <ul>
+
+                {% for strength in result.ai_strengths %}
+
+                    <li>
+                        {{ strength }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>
+                No specific strengths detected.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- AI WEAKNESSES -->
+    <!-- ================================= -->
+
+    <div class="card weaknesses">
+
+        <h2>⚠️ AI Detected Weaknesses</h2>
+
+        {% if result.ai_weaknesses %}
+
+            <ul>
+
+                {% for weakness in result.ai_weaknesses %}
+
+                    <li>
+                        {{ weakness }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>
+                No major weaknesses detected.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- CONTACT INFORMATION -->
+    <!-- ================================= -->
+
+    <div class="cards-container">
+
+
+        <div class="card">
+
+            <h2>Contact Information</h2>
+
+            <p>
+
+                {% if result.email %}
+
+                    ✅ Email detected
+
+                {% else %}
+
+                    ❌ Email not detected
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.phone %}
+
+                    ✅ Phone number detected
+
+                {% else %}
+
+                    ❌ Phone number not detected
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- RESUME SECTIONS -->
+        <!-- ================================= -->
+
+        <div class="card">
+
+            <h2>Resume Sections</h2>
+
+            <p>
+
+                {% if result.sections.skills %}
+
+                    ✅ Skills section detected
+
+                {% else %}
+
+                    ❌ Skills section missing
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.sections.education %}
+
+                    ✅ Education section detected
+
+                {% else %}
+
+                    ❌ Education section missing
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.sections.experience %}
+
+                    ✅ Experience section detected
+
+                {% else %}
+
+                    ❌ Experience section missing
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.sections.projects %}
+
+                    ✅ Projects section detected
+
+                {% else %}
+
+                    ❌ Projects section missing
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- ADDITIONAL SECTIONS -->
+        <!-- ================================= -->
+
+        <div class="card">
+
+            <h2>Additional Sections</h2>
+
+            <p>
+
+                {% if result.sections.summary %}
+
+                    ✅ Professional Summary detected
+
+                {% else %}
+
+                    ❌ Professional Summary missing
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.sections.certifications %}
+
+                    ✅ Certifications detected
+
+                {% else %}
+
+                    ❌ Certifications missing
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.sections.achievements %}
+
+                    ✅ Achievements detected
+
+                {% else %}
+
+                    ❌ Achievements missing
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- ONLINE PROFILES -->
+        <!-- ================================= -->
+
+        <div class="card">
+
+            <h2>Online Profiles</h2>
+
+            <p>
+
+                {% if result.linkedin %}
+
+                    ✅ LinkedIn profile detected
+
+                {% else %}
+
+                    ❌ LinkedIn profile not detected
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                {% if result.github %}
+
+                    ✅ GitHub profile detected
+
+                {% else %}
+
+                    ❌ GitHub profile not detected
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- RESUME CONTENT -->
+        <!-- ================================= -->
+
+        <div class="card">
+
+            <h2>Resume Content</h2>
+
+            <p>
+
+                Word Count:
+
+                <strong>
+                    {{ result.word_count }}
+                </strong>
+
+            </p>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- DETECTED SKILLS -->
+        <!-- ================================= -->
+
+        <div class="card">
+
+            <h2>Detected Skills</h2>
+
+            {% if result.skills %}
+
+                <ul class="skills-list">
+
+                    {% for skill in result.skills %}
+
+                        <li>
+                            {{ skill }}
+                        </li>
+
+                    {% endfor %}
+
+                </ul>
+
+            {% else %}
+
+                <p>
+                    No technical skills detected.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- AI RECOMMENDATIONS -->
+    <!-- ================================= -->
+
+    <div class="card ai-recommendations">
+
+        <h2>🤖 AI Recommendations</h2>
+
+        {% if result.ai_recommendations %}
+
+            <ul>
+
+                {% for recommendation in result.ai_recommendations %}
+
+                    <li>
+                        {{ recommendation }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>
+                ✅ No major AI recommendations.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- GENERAL RECOMMENDATIONS -->
+    <!-- ================================= -->
+
+    <div class="card recommendations">
+
+        <h2>💡 General Recommendations</h2>
+
+        {% if result.recommendations %}
+
+            <ul>
+
+                {% for recommendation in result.recommendations %}
+
+                    <li>
+                        {{ recommendation }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>
+                ✅ Your resume meets all the basic checks.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- BUTTONS -->
+    <!-- ================================= -->
+
+    <div class="buttons">
+
+        <a href="/general-analyzer"
+           class="btn analyze">
+
+            Analyze Another Resume
+
+        </a>
+
+
+        <a href="/dashboard"
+           class="btn dashboard">
+
+            Dashboard
+
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
