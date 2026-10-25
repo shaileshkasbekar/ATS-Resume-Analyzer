@@ -1,0 +1,24 @@
+{# Step indicator for one job match: shows where the user is and what comes next.
+   current: "match" | "improve" | "build" | "learn" | "prepare" #}
+
+{% macro journey(jd_id, current) -%}
+{% set steps = [
+    ("match", "Review match", "/history/jd/" ~ jd_id),
+    ("improve", "Improve resume", "/assistant/" ~ jd_id),
+    ("build", "Build resume", "/optimize/" ~ jd_id),
+    ("learn", "Close skill gaps", "/roadmap"),
+    ("prepare", "Prepare interview", "/interview/" ~ jd_id),
+] %}
+{% set ns = namespace(reached=false) %}
+<nav aria-label="Your progress for this job">
+    <ol class="journey">
+        {% for key, label, url in steps %}
+        {% set is_current = key == current %}
+        <li class="{% if is_current %}current{% elif not ns.reached %}done{% endif %}">
+            <a href="{{ url }}" {% if is_current %}aria-current="step"{% endif %}>{{ label }}</a>
+        </li>
+        {% if is_current %}{% set ns.reached = true %}{% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{%- endmacro %}

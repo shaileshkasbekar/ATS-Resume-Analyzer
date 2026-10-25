@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% from "_macros.html" import level %}
+
+{% block title %}{{ info.label }}{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">{{ info.label }}</span>
+        <h1>Choose a job match</h1>
+        <p>{{ info.intro }}</p>
+    </div>
+</div>
+
+{% if not ready %}
+
+<div class="card empty-state">
+    <i class="fa-solid fa-database"></i>
+    <h3>Database upgrade needed</h3>
+    <p>Run <code>database/upgrade_v5.sql</code> to use this tool.</p>
+</div>
+
+{% elif analyses %}
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Job</th><th>Match</th><th class="hide-sm">Resume</th><th class="hide-sm">Date</th><th></th></tr></thead>
+            <tbody>
+                {% for a in analyses %}
+                <tr>
+                    <td>
+                        <strong>{{ a.job_title or "Job description" }}</strong>
+                        {% if loop.first %}<span class="badge tint-primary">Latest</span>{% endif %}
+                        <div class="muted small show-sm">{{ a.created_at.strftime("%d %b %Y") if a.created_at else "" }}</div>
+                    </td>
+                    <td><span class="badge tint-{{ level(a.score) }}">{{ "%.0f"|format((a.score or 0)|float) }}%</span></td>
+                    <td class="muted small hide-sm">{{ a.file_name }}</td>
+                    <td class="muted small hide-sm" style="white-space: nowrap;">{{ a.created_at.strftime("%d %b %Y") if a.created_at else "" }}</td>
+                    <td><a href="{{ info.url.format(id=a.jd_result_id) }}" class="btn btn-primary btn-sm"><i class="fa-solid {{ info.icon }}"></i> Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+
+<div class="card empty-state">
+    <i class="fa-solid {{ info.icon }}"></i>
+    <h3>No job matches yet</h3>
+    <p>{{ info.label }} works on a job match. Match your resume to a job first.</p>
+    <a href="/job-match" class="btn btn-primary"><i class="fa-solid fa-handshake"></i> Match a job</a>
+</div>
+
+{% endif %}
+
+{% endblock %}

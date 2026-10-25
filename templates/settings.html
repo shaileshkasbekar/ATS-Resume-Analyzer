@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Settings</span>
+        <h1>Your account</h1>
+        <p>Signed in as {{ user.email }}{% if user.created_at %} · member since {{ user.created_at.strftime("%b %Y") }}{% endif %}</p>
+    </div>
+</div>
+
+<div class="grid grid-2">
+
+    <form method="POST" action="/settings/profile" class="card">
+        {{ csrf_field() }}
+        <div class="card-head"><h2><i class="fa-regular fa-user"></i> Profile</h2></div>
+        <div class="field">
+            <label for="fullname">Full name</label>
+            <input class="input" id="fullname" name="fullname" value="{{ user.full_name }}" minlength="2" maxlength="100" required autocomplete="name">
+        </div>
+        <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" value="{{ user.email }}" disabled>
+            <span class="field-hint">Your email is your login and cannot be changed here.</span>
+        </div>
+        <button type="submit" class="btn btn-primary">Save profile</button>
+    </form>
+
+    <form method="POST" action="/settings/password" class="card">
+        {{ csrf_field() }}
+        <div class="card-head"><h2><i class="fa-solid fa-lock"></i> Password</h2></div>
+        <div class="field">
+            <label for="current_password">Current password</label>
+            <input class="input" type="password" id="current_password" name="current_password" required autocomplete="current-password">
+        </div>
+        <div class="field">
+            <label for="new_password">New password</label>
+            <input class="input" type="password" id="new_password" name="new_password" minlength="8" required autocomplete="new-password">
+            <span class="field-hint">At least 8 characters.</span>
+        </div>
+        <div class="field">
+            <label for="confirm_password">Confirm new password</label>
+            <input class="input" type="password" id="confirm_password" name="confirm_password" minlength="8" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary">Change password</button>
+    </form>
+
+</div>
+
+<div class="card" style="margin-top: 18px;">
+    <div class="card-head"><h2><i class="fa-solid fa-shield-halved"></i> Privacy</h2></div>
+    <ul class="list list-tip">
+        <li><i class="fa-solid fa-lock"></i><span>Your resumes are stored in a private folder and are only shown to you.</span></li>
+        <li><i class="fa-solid fa-key"></i><span>Your password is stored as a secure hash, never as plain text.</span></li>
+        <li><i class="fa-solid fa-robot"></i><span>For AI features, the text of your resume and job description is sent to the Groq AI service.</span></li>
+        <li><i class="fa-regular fa-trash-can"></i><span>You can delete any analysis from <a href="/history">History</a>, versions from <a href="/resumes">My Resumes</a> and jobs from <a href="/jobs">Saved Jobs</a>.</span></li>
+    </ul>
+</div>
+
+{% endblock %}

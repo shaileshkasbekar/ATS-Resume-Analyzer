@@ -1,4 +1,4 @@
-from resume_parser.ai_client import ask_ai_for_json
+from resume_parser.ai_client import ask_ai_for_json, as_untrusted
 
 
 # -----------------------------------------
@@ -130,7 +130,7 @@ AVAILABLE TECHNOLOGY PATHS:
 
 RESUME:
 
-{resume_text}
+{as_untrusted("resume", resume_text)}
 
 
 IMPORTANT SCORING RULES:

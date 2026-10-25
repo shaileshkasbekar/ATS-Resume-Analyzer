@@ -812,6 +812,8 @@ def upload_resume():
             "user_id"
         ]
 
+        saved_result_id = None
+
 
         connection = get_db_connection()
 
@@ -878,6 +880,9 @@ def upload_resume():
             # Saved only after the database upgrade
             # adds the skill_evidence column
 
+            if "scoring_version" in table_columns(cursor, "resume_results"):
+                result_data["scoring_version"] = "ats-2.0"
+
             if "skill_evidence" in table_columns(cursor, "resume_results"):
 
                 result_data["skill_evidence"] = json.dumps(
@@ -898,6 +903,8 @@ def upload_resume():
                 result_query,
                 tuple(result_data.values())
             )
+
+            saved_result_id = cursor.lastrowid
 
 
             # -----------------------------------------
@@ -937,6 +944,8 @@ def upload_resume():
 
         return render_template(
             "result.html",
+
+            report_url=f"/report/ats/{saved_result_id}.pdf" if saved_result_id else None,
 
             ats_score=final_score,
 

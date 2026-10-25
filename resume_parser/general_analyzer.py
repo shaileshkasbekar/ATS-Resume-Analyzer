@@ -83,6 +83,135 @@ def _content_checks(lines, text_lower):
     }
 
 
+SCORING_VERSION = "gen-2.0"
+
+VAGUE_WORDS = ["various", "etc", "several things", "many things", "stuff", "some tasks", "different things"]
+
+
+def experience_level(text, has_experience_section):
+    """
+    "fresher", "early career" or "experienced", from dated work
+    experience and graduation years. Used to adapt the checks.
+    """
+
+    from datetime import date
+
+    from resume_parser.job_matcher import estimate_experience_years
+    from resume_parser.sections import split_sections
+
+    years = estimate_experience_years(split_sections(text).get("experience", "")) or 0
+
+    graduation_years = [int(y) for y in re.findall(r"\b(20\d{2})\b", text)]
+
+    # Still studying, or finished within about a year (no years found: assume recent)
+
+    recent_graduate = not graduation_years or max(graduation_years) >= date.today().year - 1
+
+    if years >= 2:
+        return "experienced"
+
+    if recent_graduate and (years < 1 or not has_experience_section):
+        return "fresher"
+
+    return "early career"
+
+
+def _bullets(lines):
+
+    result = []
+
+    for line in lines:
+
+        stripped = line.strip()
+
+        if stripped and not stripped[0].isalnum():
+
+            clean = stripped.lstrip(BULLET_CHARS + "\uf0b7\uf0a7 ").strip()
+
+            if clean:
+                result.append(clean)
+
+    return result
+
+
+def find_issues(text, lines, sections, content, level):
+    """
+    Confirmed issues: definitely true from the text.
+    Potential issues: may be a problem, worth checking.
+    """
+
+    confirmed = []
+    potential = []
+
+    bullets = _bullets(lines)
+
+    # Repetition: the same verb starting many bullets
+
+    first_words = [re.sub(r"[^a-z]", "", b.split()[0].lower()) for b in bullets if b.split()]
+
+    for word in sorted(set(first_words)):
+
+        count = first_words.count(word)
+
+        if word in ACTION_VERBS and count >= 3:
+            confirmed.append({"category": "Repetition", "text": f"{count} bullets start with \"{word.capitalize()}\". Vary your action verbs."})
+
+    # Vague and very long bullets
+
+    vague = [b for b in bullets if any(re.search(r"\b" + re.escape(v) + r"\b", b.lower()) for v in VAGUE_WORDS)]
+
+    if vague:
+        confirmed.append({"category": "Vague wording", "text": f"Vague words in: \"{vague[0][:90]}\". Say exactly what you did."})
+
+    short = [b for b in bullets if len(b.split()) < 5 and not re.search(r"[:|]", b)]
+
+    if len(short) >= 3:
+        potential.append({"category": "Vague bullets", "text": f"{len(short)} bullet points are very short (under 5 words), e.g. \"{short[0][:60]}\"."})
+
+    long = [b for b in bullets if len(b.split()) > 40]
+
+    if long:
+        potential.append({"category": "Readability", "text": f"{len(long)} bullet point(s) are over 40 words. Split them or shorten them."})
+
+    if content["weak_phrases"]:
+        confirmed.append({"category": "Weak phrases", "text": "Weak phrases found: " + ", ".join(content["weak_phrases"]) + "."})
+
+    if content["pronouns"] > 2:
+        confirmed.append({"category": "Style", "text": f"\"I / me / my\" used {content['pronouns']} times."})
+
+    # Missing sections, adapted to experience level
+
+    if not sections["experience"]:
+
+        if level == "fresher":
+            potential.append({"category": "Sections", "text": "No Experience section. That is normal for a fresher — make sure your Projects show real work, and add internships if you have any."})
+        else:
+            confirmed.append({"category": "Sections", "text": "No Experience section found."})
+
+    for key, label in (("skills", "Skills"), ("education", "Education"), ("projects", "Projects")):
+        if not sections[key]:
+            (potential if key == "projects" and level == "experienced" else confirmed).append(
+                {"category": "Sections", "text": f"No {label} section heading found."}
+            )
+
+    # PDF / ATS reading problems
+
+    unreadable = len(re.findall(r"[\ufffd\ue000-\uf8ff]", text))
+
+    if unreadable >= 5:
+        potential.append({"category": "PDF extraction", "text": f"{unreadable} characters could not be read as text (icons or special fonts). An ATS may show these as garbage — use plain text for contact details and bullets."})
+
+    wide_gaps = sum(1 for l in lines if re.search(r"\S\s{4,}\S", l))
+
+    if lines and wide_gaps / len(lines) > 0.15:
+        potential.append({"category": "PDF extraction", "text": "Many lines contain large gaps, which often means a two-column layout or a table. Some ATS read columns in the wrong order — a single-column layout is safer."})
+
+    if len(text.split()) < 120:
+        potential.append({"category": "PDF extraction", "text": "Very little text was found. If your resume is a designed or scanned PDF, an ATS may not be able to read it."})
+
+    return {"confirmed": confirmed, "potential": potential}
+
+
 def analyze_resume(text):
 
     result = {}
@@ -193,7 +322,14 @@ def analyze_resume(text):
     if section_result["education"]:
         score += 8
 
-    if section_result["experience"]:
+    level = experience_level(text, section_result["experience"])
+
+    result["experience_level"] = level
+
+    # Freshers are not penalized for having no work experience:
+    # a Projects section earns those points instead
+
+    if section_result["experience"] or (level == "fresher" and section_result["projects"]):
         score += 8
 
     if section_result["projects"]:
@@ -254,6 +390,10 @@ def analyze_resume(text):
 
     result["score"] = min(score, 100)
 
+    result["scoring_version"] = SCORING_VERSION
+
+    result["issues"] = find_issues(text, lines, section_result, content, level)
+
 
     # --------------------------------
     # Recommendations
@@ -276,7 +416,7 @@ def analyze_resume(text):
     if not section_result["education"]:
         recommendations.append("Add an Education section.")
 
-    if not section_result["experience"]:
+    if not section_result["experience"] and level != "fresher":
         recommendations.append("Add an Experience or Internship section.")
 
     if not section_result["projects"]:

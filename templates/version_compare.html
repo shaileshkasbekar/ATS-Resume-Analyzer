@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% macro delta(value) -%}
+{% if value > 0 %}<span class="delta-up">+{{ value }}</span>{% elif value < 0 %}<span class="delta-down">{{ value }}</span>{% else %}<span class="muted">0</span>{% endif %}
+{%- endmacro %}
+
+{% block title %}Compare Versions{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Version comparison</span>
+        <h1>{{ a.label }} → {{ b.label }}</h1>
+        <p>{% if job %}Against: <strong>{{ job.title or "Untitled job" }}</strong>{% if job.company %} · {{ job.company }}{% endif %}{% else %}Skills and resume quality only (choose a saved job to compare job match scores).{% endif %}</p>
+    </div>
+    <a href="/resumes" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> My resumes</a>
+</div>
+
+<div class="stack">
+
+    <div class="grid grid-{{ 3 if c.job else 2 }}">
+        {% if c.job %}
+        <div class="card stat">
+            <div class="stat-top">Job match score</div>
+            <div class="stat-value">{{ "%.0f"|format(c.job.a) }} → {{ "%.0f"|format(c.job.b) }}</div>
+            <div>{{ delta(c.job.delta) }} points</div>
+        </div>
+        {% endif %}
+        <div class="card stat">
+            <div class="stat-top">General quality (basic checks)</div>
+            <div class="stat-value">{{ c.general.a }} → {{ c.general.b }}</div>
+            <div>{{ delta(c.general.b - c.general.a) }} points</div>
+        </div>
+        <div class="card stat">
+            <div class="stat-top">Skills</div>
+            <div class="stat-value">+{{ c.skills_added|length }} / −{{ c.skills_removed|length }}</div>
+            <div class="muted small">{{ c.skills_common|length }} unchanged</div>
+        </div>
+    </div>
+
+    <p class="disclaimer">Both versions are scored against the same saved job requirements with the same rule-based engine (no AI){% if c.job %} and scoring version {{ scoring_version }}{% endif %}, so differences come only from what changed in your resume.</p>
+
+    {% if c.job %}
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-magnifying-glass-chart"></i> What changed the job match score</h2></div>
+        {% if c.job.changes %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Requirement</th><th>Before</th><th>After</th><th>Points</th></tr></thead>
+                <tbody>
+                    {% for ch in c.job.changes %}
+                    <tr>
+                        <td><strong>{{ ch.requirement }}</strong><div class="muted small">{{ ch.importance }}</div></td>
+                        <td class="small">{{ ch.before }}</td>
+                        <td class="small">{{ ch.after }}{% if ch.evidence %}<div class="muted"><q>{{ ch.evidence }}</q></div>{% endif %}</td>
+                        <td>{{ delta(ch.points) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty">No requirement changed between these versions.</p>
+        {% endif %}
+
+        <p class="muted small" style="margin: 16px 0 6px;">By component:</p>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Component</th><th>Before</th><th>After</th><th>Change</th></tr></thead>
+                <tbody>
+                    {% for comp in c.job.components %}
+                    <tr><td>{{ comp.label }}</td><td>{{ comp.a }}</td><td>{{ comp.b }}</td><td>{{ delta(comp.delta) }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if c.job.remaining %}
+        <p class="muted small" style="margin: 16px 0 6px;">Still to fix in "{{ b.label }}":</p>
+        {{ c.job.remaining|join(" · ") }}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-plus"></i> Skills added</h2></div>
+            {% if c.skills_added %}<div class="chips">{% for s in c.skills_added %}<span class="chip chip-good"><i class="fa-solid fa-plus" aria-hidden="true"></i> {{ s }}</span>{% endfor %}</div>{% else %}<p class="empty">None</p>{% endif %}
+        </div>
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-minus"></i> Skills removed</h2></div>
+            {% if c.skills_removed %}<div class="chips">{% for s in c.skills_removed %}<span class="chip chip-low"><i class="fa-solid fa-minus" aria-hidden="true"></i> {{ s }}</span>{% endfor %}</div>{% else %}<p class="empty">None</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-code-compare" aria-hidden="true"></i> Changed content</h2></div>
+        {% for section in c.section_changes %}
+        <h3 style="margin: 14px 0 8px;">{{ section.title }}</h3>
+        <div class="compare-cols">
+            <div class="stack" style="gap: 6px;">
+                <p class="section-label" style="margin: 0;">Before · {{ a.label }}</p>
+                {% for line in section.removed %}<div class="diff-remove"><span class="sr-only">Removed: </span>{{ line }}</div>{% else %}<p class="empty">Nothing removed</p>{% endfor %}
+            </div>
+            <div class="stack" style="gap: 6px;">
+                <p class="section-label" style="margin: 0;">After · {{ b.label }}</p>
+                {% for line in section.added %}<div class="diff-add"><span class="sr-only">Added: </span>{{ line }}</div>{% else %}<p class="empty">Nothing added</p>{% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <p class="empty">The text of the sections did not change.</p>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Learning Roadmap{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Learning roadmap</span>
+        <h1>Your learning roadmap</h1>
+        <p>Skills to learn or show better, from your job matches. Tick a task when you finish it.</p>
+    </div>
+    {% if total %}<a href="/roadmap.pdf" class="btn btn-ghost"><i class="fa-solid fa-download" aria-hidden="true"></i> Download PDF</a>{% endif %}
+</div>
+
+{% if total %}
+
+<div class="stack">
+
+    <div class="grid grid-2">
+
+        <div class="card stat">
+            <div class="stat-top">Overall progress</div>
+            <div class="progress-row">
+                <div class="stat-value" data-progress-text>{{ done }} / {{ total }}</div>
+                <div class="meter-track" role="progressbar" aria-label="Tasks completed" aria-valuemin="0" aria-valuemax="{{ total }}" aria-valuenow="{{ done }}">
+                    <div class="meter-fill good" data-progress-bar style="width: {{ (done / total * 100)|round(1) }}%"></div>
+                </div>
+            </div>
+            <p class="muted small">tasks completed</p>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Roadmaps by job</h2></div>
+            <ul class="list">
+                {% for job in jobs %}
+                <li style="align-items: center;">
+                    <i class="fa-solid fa-bullseye" style="color: var(--primary);" aria-hidden="true"></i>
+                    <span style="flex: 1; min-width: 0;"><strong>{{ job.job_title }}</strong> <span class="muted small">{{ job.done }}/{{ job.total }} done</span></span>
+                    <a href="/job-match?from={{ job.jd_result_id }}" class="btn btn-ghost btn-sm" title="Run this job again with your updated resume">Reanalyze</a>
+                    <form method="POST" action="/roadmap/{{ job.jd_result_id }}/delete">
+                        {{ csrf_field() }}
+                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Remove roadmap for {{ job.job_title }}" data-confirm="Remove the roadmap for {{ job.job_title }}?"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+
+    {% for group in priorities %}
+
+    <section class="card" aria-labelledby="group-{{ group.key }}">
+
+        <div class="card-head">
+            <h2 id="group-{{ group.key }}">
+                <span class="badge tint-{{ {'high': 'low', 'medium': 'ok', 'low': 'info'}[group.key] }}">{{ {"high": "Priority 1", "medium": "Priority 2", "low": "Priority 3"}[group.key] }}</span>
+                {{ group.title }}
+            </h2>
+            <span class="muted small">{{ group.done }} / {{ group["items"]|length }} done</span>
+        </div>
+        <p class="field-hint" style="margin-bottom: 14px;">{{ group.hint }}</p>
+
+        <div class="stack" style="gap: 14px;">
+            {% for item in group["items"] %}
+            <div class="group roadmap-item {% if item.status == 'done' %}done{% endif %}" data-roadmap-item="{{ item.item_id }}">
+                <input type="checkbox" id="task-{{ item.item_id }}" {% if item.status == "done" %}checked{% endif %}>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="group-head">
+                        <h3><label for="task-{{ item.item_id }}">{{ item.skill }}</label></h3>
+                        <span class="muted small">{{ item.job_title or "Job" }}</span>
+                    </div>
+                    <p class="small" style="margin: 6px 0 10px;">{{ item.why }}</p>
+                    <details class="expand">
+                        <summary>Objectives and exercises</summary>
+                        <div class="expand-body">
+                            <div class="grid grid-2">
+                                <div>
+                                    <p class="section-label">Learning objectives</p>
+                                    <ul class="list list-tip">{% for o in item.objectives %}<li><i class="fa-solid fa-bullseye" aria-hidden="true"></i><span>{{ o }}</span></li>{% endfor %}</ul>
+                                </div>
+                                <div>
+                                    <p class="section-label">Practical exercises</p>
+                                    <ul class="list list-tip">{% for e in item.exercises %}<li><i class="fa-solid fa-dumbbell" aria-hidden="true"></i><span>{{ e }}</span></li>{% endfor %}</ul>
+                                </div>
+                            </div>
+                            <p class="small" style="margin-top: 10px;"><strong>Project extension:</strong> {{ item.project_extension }}</p>
+                            <p class="small" style="margin-top: 6px;"><strong>Show it on your resume:</strong> {{ item.demonstrate }}</p>
+                            {% if item.resource_url %}
+                            <a href="{{ item.resource_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" style="margin-top: 10px;">
+                                <i class="fa-solid fa-book-open" aria-hidden="true"></i> {{ item.resource_name }} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </details>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </section>
+
+    {% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="card empty-state">
+    <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+    <h3>No roadmap yet</h3>
+    <p>Run a job match, then choose "Create learning roadmap" on the result. Required skills come first.</p>
+    <a href="/job-match" class="btn btn-primary">Match a job</a>
+</div>
+
+{% endif %}
+
+{% endblock %}

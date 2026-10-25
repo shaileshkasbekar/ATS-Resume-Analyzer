@@ -1,198 +1,442 @@
 {% extends "base.html" %}
 
-{% from "_macros.html" import ring, meter, chips, icon_list, verdict, learning_plan_card %}
+{% from "_macros.html" import ring, meter, chips, icon_list, verdict, level, learning_plan_card %}
+{% from "_journey.html" import journey %}
+
+{% set EVIDENCE = {
+    "experience": ("Work experience", "good", "fa-briefcase"),
+    "project": ("Project", "good", "fa-diagram-project"),
+    "listed": ("Skills list only", "ok", "fa-list"),
+    "mentioned": ("Mentioned only", "ok", "fa-comment"),
+    "unknown": ("Found", "info", "fa-check")
+} %}
+
+{% macro skill_item(m) -%}
+<details class="expand">
+    <summary>
+        {% if m.status == "missing" and m.importance == "preferred" %}
+        <i class="fa-solid fa-circle-plus" style="color: var(--info);" aria-hidden="true"></i>
+        {% elif m.status == "missing" %}
+        <i class="fa-solid fa-circle-xmark" style="color: var(--low);" aria-hidden="true"></i>
+        {% elif m.match_type == "semantic" or m.evidence in ("listed", "mentioned", "unknown") %}
+        <i class="fa-solid fa-circle-half-stroke" style="color: var(--ok);" aria-hidden="true"></i>
+        {% else %}
+        <i class="fa-solid fa-circle-check" style="color: var(--good);" aria-hidden="true"></i>
+        {% endif %}
+        <span>{{ m.requirement }}</span>
+        {% if m.status != "missing" %}
+        {% set ev = EVIDENCE.get(m.evidence, ("Found", "info", "fa-check")) %}
+        <span class="badge tint-{{ ev[1] }}">{{ ev[0] }}</span>
+        {% if m.match_type == "semantic" %}<span class="badge tint-info">By meaning</span>{% endif %}
+        {% endif %}
+        {% if m.points_lost and m.points_lost > 0 %}<span class="points-lost">−{{ m.points_lost }} pts</span>{% endif %}
+    </summary>
+    <div class="expand-body">
+        {% if m.any_of|length > 1 %}<p>Any one of: {{ m.any_of|join(", ") }}.</p>{% endif %}
+        {% if m.snippet %}<p><strong>Your resume:</strong> <q>{{ m.snippet }}</q></p>{% endif %}
+        {% if m.evidence_via %}<p>Shown through {{ m.evidence_via }}.</p>{% endif %}
+        {% if m.reason %}<p><strong>AI reasoning:</strong> {{ m.reason }}</p>{% endif %}
+        {% if m.status == "missing" %}<p>Not found in your resume. If you have used it, describe it in a project or job.</p>
+        {% elif m.evidence in ("listed", "mentioned") %}<p>Partial credit: show it in a project or job bullet to get full credit.</p>{% endif %}
+    </div>
+</details>
+{%- endmacro %}
+
+{% macro skill_group(items, limit=6) -%}
+<div class="expand-list">
+    {% for m in items[:limit] %}{{ skill_item(m) }}{% endfor %}
+</div>
+{% if items|length > limit %}
+<details class="more-toggle">
+    <summary>Show {{ items|length - limit }} more</summary>
+    <div class="expand-list" style="margin-top: 8px;">
+        {% for m in items[limit:] %}{{ skill_item(m) }}{% endfor %}
+    </div>
+</details>
+{% endif %}
+{%- endmacro %}
 
 {% block title %}Job Match Result{% endblock %}
 
 {% block content %}
 
+{% set req = result.requirements %}
+
 <div class="page-head">
 
     <div>
-        <span class="eyebrow">Job match result</span>
-        <h1>{{ result.job_title or "Your job match report" }}</h1>
-        {% if filename %}
-        <p><i class="fa-regular fa-file-pdf"></i> {{ filename }}</p>
-        {% endif %}
+        <span class="eyebrow">
+            Job match result
+            {% if result.source_type == "role" %} · predefined role{% endif %}
+        </span>
+        <h1>
+            {{ result.job_title or "Your job match" }}
+            {% if result.company %}<span class="muted" style="font-weight: 500;"> · {{ result.company }}</span>{% endif %}
+        </h1>
+        <p>
+            {% if filename %}<i class="fa-regular fa-file-pdf" aria-hidden="true"></i> {{ filename }} · {% endif %}
+            Analyzed {{ analyzed_at.strftime("%d %b %Y, %I:%M %p") if analyzed_at else "" }}
+        </p>
     </div>
 
     <div class="actions">
-        <a href="/history" class="btn btn-ghost">
-            <i class="fa-solid fa-clock-rotate-left"></i> History
+        {% if jd_result_id %}
+        <a href="/report/jd/{{ jd_result_id }}.pdf" class="btn btn-ghost">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> PDF report
         </a>
-        <a href="/job-match" class="btn btn-primary">
-            <i class="fa-solid fa-rotate"></i> Match another job
+        {% endif %}
+        <a href="/job-match" class="btn btn-ghost">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> New job match
         </a>
     </div>
 
 </div>
 
+{% if career_tools %}{{ journey(jd_result_id, "match") }}{% endif %}
 
 <div class="stack">
 
-    <!-- ================= SCORE ================= -->
+    <!-- ================= A. SCORE OVERVIEW ================= -->
 
-    <div class="card hero">
+    <section class="card" aria-labelledby="overview-title">
 
-        {{ ring(result.score, "Job match") }}
+        <h2 id="overview-title" class="sr-only">Score overview</h2>
 
-        <div class="hero-body">
+        <div class="score-pair">
 
-            <h2>{{ verdict(result.score) }}</h2>
-
-            <p>
-                You match {{ details.matched_skills|length }} of
-                {{ (details.must_have_skills|length) + (details.nice_to_have_skills|length) }}
-                skills this job asks for.
-                {% if details.required_experience %}
-                <br>Experience asked: <strong>{{ details.required_experience }}</strong>
-                {% endif %}
-            </p>
-
-            {{ meter("Skill keyword match", result.keyword_score) }}
-            {% if result.ai_available is not defined or result.ai_available %}
-            {{ meter("AI relevance", result.ai_relevance) }}
-            {{ meter("Experience match", result.experience_match) }}
-            {% endif %}
-
-        </div>
-
-    </div>
-
-
-    <!-- ================= SKILLS ================= -->
-
-    <div class="grid grid-2">
-
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-circle-check"></i> Skills you match</h2>
-                <span class="badge tint-good">{{ details.matched_skills|length }}</span>
+            <div class="score-tile">
+                {{ ring(result.score, "Job match") }}
+                <div>
+                    <h3>Job Match Score</h3>
+                    <p class="small muted">How well your resume fits <strong>this job's</strong> requirements.</p>
+                    <span class="badge tint-{{ level(result.score) }}" style="margin-top: 6px;">{{ verdict(result.score) }}</span>
+                </div>
             </div>
 
-            {% if details.matched_skills %}
-            <div class="chips">
-                {% for skill in details.matched_skills %}
-                {% if details.skill_evidence.get(skill|lower) == "listed" %}
-                <span class="chip" title="Only listed — not shown in your projects or experience">
-                    <i class="fa-solid fa-list"></i> {{ skill }}
-                </span>
+            <div class="score-tile">
+                {% if quality %}
+                {{ ring(quality.score, "Quality") }}
+                <div>
+                    <h3>Resume Quality</h3>
+                    <p class="small muted">General quality of your resume (structure, contact, writing) — the same for every job. Basic checks, no AI.</p>
+                    <a href="/general-analyzer" class="small">Full quality check →</a>
+                </div>
                 {% else %}
-                <span class="chip chip-good" title="Used in your projects or experience">
-                    <i class="fa-solid fa-check-double"></i> {{ skill }}
-                </span>
+                <div>
+                    <h3>Resume Quality</h3>
+                    <p class="small muted">Not available for this result (the resume file is no longer stored).</p>
+                </div>
                 {% endif %}
-                {% endfor %}
             </div>
-            <p class="muted small" style="margin-top: 14px;">
-                <i class="fa-solid fa-check-double" style="color: var(--good);"></i> used in projects/experience
-                &nbsp;·&nbsp;
-                <i class="fa-solid fa-list"></i> only listed
-            </p>
-            {% else %}
-            <p class="empty">None of the job's skills were found in your resume.</p>
-            {% endif %}
+
         </div>
 
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-circle-xmark"></i> Skills you are missing</h2>
-                <span class="badge tint-low">
-                    {{ (details.missing_must_have|length) + (details.missing_nice_to_have|length) }}
+        <p style="margin-top: 18px;"><strong>What this means:</strong> {{ interpretation }}</p>
+
+        <p class="disclaimer" style="margin-top: 10px;">
+            Estimates made by this app (scoring {{ result.scoring_version }}{% if not result.ai_available %}, AI parts skipped{% endif %}),
+            not the score any particular employer's ATS will give.
+        </p>
+
+    </section>
+
+
+    <!-- ================= B. PRIORITY ACTIONS ================= -->
+
+    {% if priorities %}
+    <section aria-labelledby="priority-title">
+        <h2 id="priority-title" class="section-title" style="margin-top: 6px;">Fix these first</h2>
+        <div class="grid grid-3">
+            {% for p in priorities %}
+            <div class="priority {% if p.high %}high{% endif %}">
+                <span class="section-label" style="margin: 0;">
+                    {{ loop.index }} · {{ "Required skill" if p.high else (p.requirement or "Improvement") }}
+                    {% if p.source == "ai" %}· AI suggestion{% endif %}
                 </span>
+                <strong>{{ p.title }}</strong>
+                {% if p.why %}<p class="small">{{ p.why }}</p>{% endif %}
+                {% if p.evidence %}<p class="evidence">{{ p.evidence }}</p>{% endif %}
+                <div class="actions">
+                    {% for b in p.buttons %}
+                    {% if b.post %}
+                    <form method="POST" action="{{ b.url }}">
+                        {{ csrf_field() }}
+                        <button type="submit" class="btn btn-ghost btn-sm"><i class="fa-solid {{ b.icon }}" aria-hidden="true"></i> {{ b.label }}</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ b.url }}" class="btn {{ 'btn-primary' if loop.first else 'btn-ghost' }} btn-sm"><i class="fa-solid {{ b.icon }}" aria-hidden="true"></i> {{ b.label }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
             </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 
-            {% if details.missing_must_have or details.missing_nice_to_have %}
 
-            {% if details.missing_must_have %}
-            <p class="muted small" style="margin-bottom: 8px;">Must have</p>
-            {{ chips(details.missing_must_have, "low", "fa-xmark") }}
-            {% endif %}
+    <!-- ================= F. NEXT ACTIONS ================= -->
 
-            {% if details.missing_nice_to_have %}
-            <p class="muted small" style="margin: 14px 0 8px;">Nice to have</p>
-            {{ chips(details.missing_nice_to_have, "", "fa-plus") }}
-            {% endif %}
-
+    {% if career_tools %}
+    <section class="card" aria-labelledby="next-title">
+        <div class="card-head"><h2 id="next-title"><i class="fa-solid fa-forward" aria-hidden="true"></i> Next steps for this job</h2></div>
+        <div class="grid grid-3">
+            <a href="/assistant/{{ jd_result_id }}" class="group action-card">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);" aria-hidden="true"></i> Improve my resume</h3>
+                <p class="muted small">Rewrite suggestions you accept or reject</p>
+            </a>
+            <a href="/optimize/{{ jd_result_id }}" class="group action-card">
+                <h3><i class="fa-solid fa-file-pen" style="color: var(--primary);" aria-hidden="true"></i> Build optimized resume</h3>
+                <p class="muted small">ATS-friendly PDF in 4 templates</p>
+            </a>
+            {% if has_roadmap %}
+            <a href="/roadmap" class="group action-card">
+                <h3><i class="fa-solid fa-graduation-cap" style="color: var(--primary);" aria-hidden="true"></i> Learning roadmap</h3>
+                <p class="muted small">Your roadmap for this job is ready</p>
+            </a>
             {% else %}
-            <p class="empty">🎉 You have every skill this job lists.</p>
+            <form method="POST" action="/roadmap/create/{{ jd_result_id }}" class="group action-card" style="margin: 0;">
+                {{ csrf_field() }}
+                <button type="submit" class="plain-button">
+                    <h3><i class="fa-solid fa-graduation-cap" style="color: var(--primary);" aria-hidden="true"></i> Create learning roadmap</h3>
+                    <p class="muted small">Plan the skills to learn for this job</p>
+                </button>
+            </form>
+            {% endif %}
+            <a href="/interview/{{ jd_result_id }}" class="group action-card">
+                <h3><i class="fa-solid fa-comments" style="color: var(--primary);" aria-hidden="true"></i> Practice interview</h3>
+                <p class="muted small">Questions for this job, with feedback</p>
+            </a>
+            <a href="/projects/{{ jd_result_id }}" class="group action-card">
+                <h3><i class="fa-solid fa-lightbulb" style="color: var(--primary);" aria-hidden="true"></i> Project ideas</h3>
+                <p class="muted small">Projects that prove missing skills</p>
+            </a>
+            <a href="/job-match?from={{ jd_result_id }}" class="group action-card">
+                <h3><i class="fa-solid fa-rotate" style="color: var(--primary);" aria-hidden="true"></i> Reanalyze</h3>
+                <p class="muted small">Same job, updated resume</p>
+            </a>
+        </div>
+    </section>
+    {% endif %}
+
+
+    <!-- ================= C. SKILLS ANALYSIS ================= -->
+
+    <section class="card" id="skills" aria-labelledby="skills-title">
+
+        <div class="card-head">
+            <h2 id="skills-title"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Skills analysis</h2>
+            <span class="muted small">Click a skill to see the evidence</span>
+        </div>
+
+        <div class="grid grid-2">
+
+            <div>
+                <p class="section-label"><i class="fa-solid fa-circle-xmark" style="color: var(--low);" aria-hidden="true"></i> Missing required ({{ groups.missing_required|length }})</p>
+                {% if groups.missing_required %}{{ skill_group(groups.missing_required) }}{% else %}<p class="empty">None — every required skill was found.</p>{% endif %}
+            </div>
+
+            <div>
+                <p class="section-label"><i class="fa-solid fa-circle-half-stroke" style="color: var(--ok);" aria-hidden="true"></i> Partial or by meaning ({{ groups.partial|length }})</p>
+                {% if groups.partial %}{{ skill_group(groups.partial) }}{% else %}<p class="empty">None.</p>{% endif %}
+            </div>
+
+            <div>
+                <p class="section-label"><i class="fa-solid fa-circle-check" style="color: var(--good);" aria-hidden="true"></i> Matched with evidence ({{ groups.matched|length }})</p>
+                {% if groups.matched %}{{ skill_group(groups.matched, 5) }}{% else %}<p class="empty">None yet.</p>{% endif %}
+            </div>
+
+            <div>
+                <p class="section-label"><i class="fa-solid fa-plus" style="color: var(--info);" aria-hidden="true"></i> Missing preferred ({{ groups.missing_preferred|length }})</p>
+                {% if groups.missing_preferred %}{{ skill_group(groups.missing_preferred, 4) }}{% else %}<p class="empty">None.</p>{% endif %}
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= E. AI IMPROVEMENT SUGGESTIONS ================= -->
+
+    {% if career_tools %}
+    <section id="suggestions" aria-labelledby="suggestions-title" class="stack">
+
+        <div class="card">
+            <div class="card-head">
+                <h2 id="suggestions-title"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Improvement suggestions</h2>
+                {% if suggestions %}<a href="/assistant/{{ jd_result_id }}" class="small">All suggestions</a>{% endif %}
+            </div>
+            {% if suggestions %}
+            <p class="small muted">Edit any proposed text, then accept or reject it. Accepted changes are used by the resume builder; your original file never changes.</p>
+            {% else %}
+            <p class="small muted" style="margin-bottom: 12px;">Get rewrite suggestions for this job. They only reword what is already in your resume — nothing is invented.</p>
+            <form method="POST" action="/assistant/{{ jd_result_id }}/generate" data-loading>
+                {{ csrf_field() }}
+                <input type="hidden" name="next" value="result">
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Get suggestions</button>
+            </form>
             {% endif %}
         </div>
 
-    </div>
+        {% for s in suggestions[:3] %}
+        {% include "_suggestion_card.html" %}
+        {% endfor %}
 
-
-    <!-- ================= KEYWORDS + SUMMARY ================= -->
-
-    {% if details.keywords_to_add or details.suggested_summary %}
-    <div class="grid grid-2">
-
-        {% if details.keywords_to_add %}
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-key"></i> Keywords to add</h2>
-            </div>
-            <p class="muted small" style="margin-bottom: 12px;">
-                Words from the job posting that are missing in your resume.
-                Add the ones that are true for you.
-            </p>
-            {{ chips(details.keywords_to_add, "primary") }}
-        </div>
+        {% if suggestions|length > 3 %}
+        <a href="/assistant/{{ jd_result_id }}" class="btn btn-ghost" style="align-self: flex-start;">Review all {{ suggestions|length }} suggestions</a>
         {% endif %}
 
-        {% if details.suggested_summary %}
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-pen-nib"></i> Summary for this job</h2>
-                <button type="button" class="btn btn-ghost btn-sm" data-copy="#suggested-summary">
-                    <i class="fa-regular fa-copy"></i> Copy
-                </button>
-            </div>
-            <p id="suggested-summary">{{ details.suggested_summary }}</p>
-        </div>
-        {% endif %}
-
-    </div>
+    </section>
     {% endif %}
 
 
-    <!-- ================= STRENGTHS / GAPS ================= -->
+    <!-- ================= D. RESUME EVIDENCE ================= -->
 
-    {% if details.strengths or details.gaps %}
-    <div class="grid grid-2">
-
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-thumbs-up"></i> Why you fit</h2>
+    <details class="card expand" id="evidence" style="padding: 0;">
+        <summary style="padding: 18px 22px;">
+            <i class="fa-solid fa-magnifying-glass" style="color: var(--primary);" aria-hidden="true"></i>
+            Resume evidence for every requirement ({{ evidence|length }})
+        </summary>
+        <div style="padding: 0 22px 18px;">
+            <div class="table-wrap">
+                <table class="req-table">
+                    <thead>
+                        <tr><th>Job requirement</th><th>Result</th><th class="hide-sm">Resume section</th><th>Supporting text</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for e in evidence %}
+                        <tr>
+                            <td><strong>{{ e.requirement }}</strong><div class="muted small">{{ e.importance }}</div></td>
+                            <td><span class="badge tint-{{ 'low' if e.missing else ('info' if 'meaning' in e.classification else 'good') }}">{{ e.classification }}</span></td>
+                            <td class="small hide-sm">{{ e.section }}</td>
+                            <td class="snippet">
+                                {% if e.text %}<q>{{ e.text }}</q>{% endif %}
+                                <div class="small" style="margin-top: 4px;">{{ e.uncertainty }}</div>
+                                {% if e.reason %}<div class="small muted" style="margin-top: 2px;">AI: {{ e.reason }}</div>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {{ icon_list(details.strengths, "good", "fa-circle-check", "No specific strengths detected.") }}
         </div>
+    </details>
 
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-triangle-exclamation"></i> Gaps</h2>
+
+    <!-- ================= SCORE DETAILS ================= -->
+
+    <details class="card expand" style="padding: 0;">
+        <summary style="padding: 18px 22px;">
+            <i class="fa-solid fa-calculator" style="color: var(--primary);" aria-hidden="true"></i>
+            How your score was calculated
+        </summary>
+        <div style="padding: 0 22px 18px;">
+            {% for c in result.components if c.applicable %}{{ meter(c.label, c.score) }}{% endfor %}
+            <div class="table-wrap" style="margin-top: 16px;">
+                <table>
+                    <thead><tr><th>Component</th><th>Points</th><th>Why</th></tr></thead>
+                    <tbody>
+                        {% for c in result.components %}
+                        <tr>
+                            <td><strong>{{ c.label }}</strong>{% if c.applicable %}<div class="muted small">score {{ "%.0f"|format(c.score) }}%</div>{% endif %}</td>
+                            <td style="white-space: nowrap;">{% if c.applicable %}<strong>{{ c.points }}</strong> <span class="muted">/ {{ c.max_points }}</span>{% else %}<span class="muted">not counted</span>{% endif %}</td>
+                            <td class="small">{{ c.explanation }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>{{ result.score }}</strong> <span class="muted">/ 100</span></td>
+                            <td class="small muted">Parts that don't apply to this job are not counted; the rest are scaled to 100.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            {{ icon_list(details.gaps, "low", "fa-circle-exclamation", "No major gaps detected.") }}
+            {% if result.deductions %}
+            <p class="section-label" style="margin-top: 16px;">Where points were lost</p>
+            <ul class="list list-low">
+                {% for d in result.deductions %}
+                <li><i class="fa-solid fa-circle-minus" aria-hidden="true"></i><span><strong>−{{ d.points }} · {{ d.component }}:</strong> {{ d.reason }}</span></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
         </div>
+    </details>
 
-    </div>
-    {% endif %}
+
+    <!-- ================= EXPERIENCE, QUALIFICATIONS, JOB DETAILS ================= -->
+
+    <details class="card expand" style="padding: 0;">
+        <summary style="padding: 18px 22px;">
+            <i class="fa-solid fa-briefcase" style="color: var(--primary);" aria-hidden="true"></i>
+            Experience, qualifications and job details
+        </summary>
+        <div style="padding: 0 22px 18px;" class="stack">
+            <div class="grid grid-2">
+                <div>
+                    <p class="section-label">Experience</p>
+                    <p><strong>Job asks for:</strong>
+                        {% if result.experience.required_years is none %}not stated
+                        {% elif result.experience.required_years == 0 %}entry level / freshers
+                        {% else %}{{ "%g"|format(result.experience.required_years) }}+ years{% endif %}</p>
+                    {% if result.experience.required_text %}<p class="small muted"><q>{{ result.experience.required_text }}</q></p>{% endif %}
+                    <p style="margin-top: 6px;"><strong>Your resume shows:</strong>
+                        {% if result.experience.candidate_years is none %}no dated work experience entries
+                        {% else %}about {{ "%g"|format(result.experience.candidate_years) }} years (from dated entries){% endif %}</p>
+                    {% if result.relevant_projects %}
+                    <p class="section-label" style="margin-top: 14px;">Most relevant projects</p>
+                    <ul class="list list-good">
+                        {% for p in result.relevant_projects %}
+                        <li><i class="fa-solid fa-diagram-project" aria-hidden="true"></i><span><strong>{{ p.name }}</strong> — {{ p.reason }}<br><q class="muted small">{{ p.evidence_quote }}</q></span></li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="section-label">Qualifications</p>
+                    <ul class="list check-list">
+                        {% if result.education.required_level is not none %}
+                        <li>
+                            <i class="fa-solid {{ 'fa-circle-check' if result.education.met else 'fa-circle-xmark' }}" aria-hidden="true"></i>
+                            <span>Degree requirement {{ "met" if result.education.met else "not clearly met" }}{% if result.education.in_progress %} (in progress){% endif %}</span>
+                        </li>
+                        {% endif %}
+                        {% for c in result.certifications %}
+                        <li><i class="fa-solid {{ 'fa-circle-check' if c.met else 'fa-circle-xmark' }}" aria-hidden="true"></i><span>{{ c.requirement }}: {{ "found" if c.met else "not found" }}</span></li>
+                        {% endfor %}
+                        {% if result.education.required_level is none and not result.certifications %}
+                        <li><i class="fa-solid fa-circle-info" style="color: var(--info);" aria-hidden="true"></i><span>No specific degree or certification asked for.</span></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% if req.responsibilities or req.soft_skills %}
+            <div class="grid grid-2">
+                {% if req.responsibilities %}<div><p class="section-label">Responsibilities</p>{{ icon_list(req.responsibilities, "tip", "fa-angle-right") }}</div>{% endif %}
+                {% if req.soft_skills %}<div><p class="section-label">Soft skills mentioned (not scored)</p>{{ chips(req.soft_skills|map("capitalize")|list, "primary") }}</div>{% endif %}
+            </div>
+            {% endif %}
+            {% if result.strengths %}
+            <div>
+                <p class="section-label">Why you fit</p>
+                <ul class="list list-good">
+                    {% for s in result.strengths %}<li><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span><strong>{{ s.text }}</strong>{% if s.evidence %}<br><q class="muted small">{{ s.evidence }}</q>{% endif %}</span></li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </details>
 
 
     <!-- ================= LEARNING PLAN ================= -->
 
-    {{ learning_plan_card(learning_plan) }}
-
-
-    <!-- ================= RECOMMENDATIONS ================= -->
-
-    {% if details.recommendations %}
-    <div class="card">
-        <div class="card-head">
-            <h2><i class="fa-solid fa-lightbulb"></i> Recommendations</h2>
-        </div>
-        {{ icon_list(details.recommendations, "tip", "fa-arrow-right") }}
-    </div>
+    {% if learning_plan %}
+    <details class="card expand" style="padding: 0;">
+        <summary style="padding: 18px 22px;">
+            <i class="fa-solid fa-graduation-cap" style="color: var(--primary);" aria-hidden="true"></i>
+            How to learn the missing skills ({{ learning_plan|length }})
+        </summary>
+        <div style="padding: 0 6px 6px;">{{ learning_plan_card(learning_plan) }}</div>
+    </details>
     {% endif %}
 
 </div>

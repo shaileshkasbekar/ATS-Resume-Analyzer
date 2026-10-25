@@ -7,56 +7,186 @@
 <div class="page-head">
     <div>
         <span class="eyebrow">Job match</span>
-        <h1>Match your resume to a real job</h1>
-        <p>Paste a job posting from LinkedIn, Naukri or any company site and see how well your resume fits.</p>
+        <h1>Match your resume to a job</h1>
+        <p>Four steps. A real job posting gives the most accurate result; a job role works if you don't have one.</p>
     </div>
 </div>
 
 <div class="upload-layout">
 
-    <form method="POST" enctype="multipart/form-data" class="card" data-loading>
+    <form method="POST" enctype="multipart/form-data" class="card" data-loading data-mode-form>
+        {{ csrf_field() }}
 
+        <!-- ============ Step 1: resume ============ -->
+
+        <div class="form-step"><span class="num">1</span> Your resume</div>
+
+        {% if versions %}
         <div class="field">
-            <label for="job_title">Job title <span class="muted small">(optional)</span></label>
-            <input class="input" type="text" id="job_title" name="job_title"
-                   placeholder="e.g. Junior Backend Developer" maxlength="200">
+            <label for="resume_version_id">Use a saved version or upload a new PDF</label>
+            <select class="input" id="resume_version_id" name="resume_version_id" data-version-select>
+                <option value="">Upload a new PDF…</option>
+                {% for v in versions %}
+                <option value="{{ v.version_id }}" {% if prefill.resume_version_id == v.version_id %}selected{% endif %}>{{ v.label }} ({{ v.file_name }})</option>
+                {% endfor %}
+            </select>
         </div>
+        {% endif %}
 
-        <div class="field">
-            <label for="job_description">Job description</label>
-            <textarea class="input" id="job_description" name="job_description" required minlength="100"
-                      placeholder="Paste the full job description here: responsibilities, requirements, preferred skills…"></textarea>
-        </div>
-
-        <div class="field">
-            <label>Resume (PDF, max 5 MB)</label>
+        <div class="field" data-upload-field>
+            <label for="resume-file">Resume PDF</label>
             <div class="dropzone">
-                <input type="file" name="resume" accept=".pdf" required>
-                <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <input type="file" id="resume-file" name="resume" accept=".pdf" required aria-describedby="resume-help">
+                <div class="dropzone-icon" aria-hidden="true"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <strong>Drag and drop your resume here</strong>
-                <span class="muted small">or click to browse</span>
-                <span class="dropzone-file"></span>
+                <span class="btn btn-ghost btn-sm" aria-hidden="true">Browse files</span>
+                <span class="dropzone-file" aria-live="polite"></span>
+            </div>
+            <span class="field-hint" id="resume-help">PDF only, up to 5 MB. Use a text-based PDF (scanned images cannot be read).</span>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <!-- ============ Step 2: job ============ -->
+
+        <div class="form-step"><span class="num">2</span> The job</div>
+
+        <div class="field">
+            <span class="sr-only" id="mode-label">How do you want to provide the job?</span>
+            <div class="tabs" role="radiogroup" aria-labelledby="mode-label">
+                <label class="tab">
+                    <input type="radio" name="mode" value="paste" {% if prefill.mode == "paste" %}checked{% endif %}>
+                    <span><i class="fa-solid fa-paste" aria-hidden="true"></i> Paste</span>
+                </label>
+                <label class="tab">
+                    <input type="radio" name="mode" value="file" {% if prefill.mode == "file" %}checked{% endif %}>
+                    <span><i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i> Upload file</span>
+                </label>
+                {% if saved_jobs %}
+                <label class="tab">
+                    <input type="radio" name="mode" value="saved" {% if prefill.mode == "saved" %}checked{% endif %}>
+                    <span><i class="fa-solid fa-bookmark" aria-hidden="true"></i> Saved job</span>
+                </label>
+                {% endif %}
+                <label class="tab">
+                    <input type="radio" name="mode" value="role" {% if prefill.mode == "role" %}checked{% endif %}>
+                    <span><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Job role</span>
+                </label>
             </div>
         </div>
 
+        <div data-mode-panel="paste">
+            <div class="field">
+                <label for="job_description">Job description</label>
+                <textarea class="input" id="job_description" name="job_description" minlength="100" maxlength="20000" required
+                          aria-describedby="jd-help"
+                          placeholder="Paste the full job description: responsibilities, requirements, preferred skills…">{{ prefill.job_description }}</textarea>
+                <span class="field-hint" id="jd-help">Paste the whole posting, including "Requirements" and "Nice to have".</span>
+            </div>
+        </div>
+
+        <div data-mode-panel="file" hidden>
+            <div class="field">
+                <label for="jd_file">Job description file</label>
+                <input class="input" type="file" id="jd_file" name="jd_file" accept=".pdf,.txt" required disabled aria-describedby="jdfile-help">
+                <span class="field-hint" id="jdfile-help">PDF or TXT, up to 5 MB.</span>
+            </div>
+        </div>
+
+        {% if saved_jobs %}
+        <div data-mode-panel="saved" hidden>
+            <div class="field">
+                <label for="saved_job_id">Saved job</label>
+                <select class="input" id="saved_job_id" name="saved_job_id" required disabled>
+                    <option value="" disabled {% if not prefill.saved_job_id %}selected{% endif %}>Select a saved job…</option>
+                    {% for job in saved_jobs %}
+                    <option value="{{ job.job_id }}" {% if prefill.saved_job_id == job.job_id %}selected{% endif %}>
+                        {{ job.title or "Untitled job" }}{% if job.company %} · {{ job.company }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="field-hint"><a href="/jobs">Manage saved jobs</a></span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div data-mode-panel="role" hidden>
+            <div class="field">
+                <label for="role_id">Job role</label>
+                <select class="input" id="role_id" name="role_id" required disabled aria-describedby="role-help">
+                    <option value="" disabled {% if not prefill.role_id %}selected{% endif %}>Select a job role…</option>
+                    {% for role in job_roles %}
+                    <option value="{{ role.role_id }}" {% if prefill.role_id == role.role_id %}selected{% endif %}>{{ role.role_name }}</option>
+                    {% endfor %}
+                </select>
+                <span class="field-hint" id="role-help">Uses the typical skills for this role. A real job description is more accurate.</span>
+            </div>
+        </div>
+
+        <div class="grid grid-2" data-mode-panel="paste file">
+            <div class="field">
+                <label for="job_title">Job title <span class="muted small">(optional)</span></label>
+                <input class="input" type="text" id="job_title" name="job_title" maxlength="200" value="{{ prefill.job_title }}" placeholder="e.g. Junior Backend Developer">
+            </div>
+            <div class="field">
+                <label for="company">Company <span class="muted small">(optional)</span></label>
+                <input class="input" type="text" id="company" name="company" maxlength="200" value="{{ prefill.company }}" placeholder="e.g. Infosys">
+            </div>
+        </div>
+
+        {% if can_save_jobs %}
+        <div data-mode-panel="paste file">
+            <label class="checkbox">
+                <input type="checkbox" name="save_job" value="1" {% if prefill.save_job %}checked{% endif %}>
+                Save this job so I can reuse it later
+            </label>
+        </div>
+        {% endif %}
+
+        <div class="form-divider"></div>
+
+        <!-- ============ Step 3: review requirements ============ -->
+
+        <div class="form-step"><span class="num">3</span> Review the requirements <span class="muted small" style="font-weight: 500;">(optional)</span></div>
+
+        <div data-mode-panel="paste">
+            <button type="button" class="btn btn-ghost btn-sm" data-preview-requirements>
+                <i class="fa-solid fa-eye" aria-hidden="true"></i> Preview requirements
+            </button>
+            <span class="field-error" data-preview-error role="alert"></span>
+            <div class="preview-box" data-preview-box hidden aria-live="polite"></div>
+        </div>
+        <p class="field-hint" data-mode-panel="file saved role" hidden>
+            The extracted requirements are shown on the result page, with what matched and why.
+        </p>
+
+        <div class="form-divider"></div>
+
+        <!-- ============ Step 4: analyze ============ -->
+
+        <div class="form-step"><span class="num">4</span> Analyze</div>
+
         <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa-solid fa-handshake"></i>
-            Match resume to job
+            <i class="fa-solid fa-handshake" aria-hidden="true"></i>
+            Analyze job match
         </button>
+        <p class="field-hint" style="margin-top: 8px; text-align: center;">Takes about 20 seconds.</p>
 
     </form>
 
     <aside class="card">
         <div class="card-head">
-            <h2><i class="fa-solid fa-circle-info"></i> What you get</h2>
+            <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> What happens next</h2>
         </div>
         <ul class="list list-tip">
-            <li><i class="fa-solid fa-gauge-high"></i><span>A match score for this exact job</span></li>
-            <li><i class="fa-solid fa-list-check"></i><span>Must-have and nice-to-have skills you match or miss</span></li>
-            <li><i class="fa-solid fa-key"></i><span>Keywords from the posting to add to your resume</span></li>
-            <li><i class="fa-solid fa-pen-nib"></i><span>A professional summary rewritten for this job</span></li>
-            <li><i class="fa-solid fa-graduation-cap"></i><span>A learning plan for the skills you are missing</span></li>
+            <li><i class="fa-solid fa-list-check" aria-hidden="true"></i><span>We list what the job requires, and for each requirement show the line in your resume that proves it — or that it is missing.</span></li>
+            <li><i class="fa-solid fa-calculator" aria-hidden="true"></i><span>You get a Job Match Score with every lost point explained.</span></li>
+            <li><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i><span>Then: fix the top 3 issues, build a tailored resume, and plan your learning and interview practice.</span></li>
         </ul>
+        <p class="muted small" style="margin-top: 16px;">
+            You are only checked against what this job asks for — never marked down
+            for technologies it does not mention.
+        </p>
     </aside>
 
 </div>

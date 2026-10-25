@@ -16,3 +16,7 @@ static/uploads/*
 .idea/
 Thumbs.db
 .DS_Store
+
+# Private resume uploads
+uploads/*
+!uploads/.gitkeep

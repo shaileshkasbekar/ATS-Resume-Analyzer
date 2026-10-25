@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% from "_chart.html" import chart, chart_script %}
+
+{% block title %}My Resumes{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Resume versions</span>
+        <h1>My resumes</h1>
+        <p>Keep every version of your resume, analyze any of them, and compare how your changes affect your scores.</p>
+    </div>
+</div>
+
+<div class="upload-layout">
+
+    <div class="card">
+
+        <div class="card-head">
+            <h2><i class="fa-solid fa-code-branch"></i> Versions</h2>
+            <span class="badge tint-primary">{{ versions|length }}</span>
+        </div>
+
+        {% if versions %}
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Label</th><th class="hide-sm">File</th><th class="hide-sm">Added</th><th></th></tr></thead>
+                <tbody>
+                    {% for v in versions %}
+                    <tr>
+                        <td><strong>{{ v.label }}</strong></td>
+                        <td class="muted small hide-sm">{{ v.file_name }}</td>
+                        <td class="muted small hide-sm" style="white-space: nowrap;">{{ v.created_at.strftime("%d %b %Y") if v.created_at else "" }}</td>
+                        <td>
+                            <div class="row-actions">
+                                <a href="/job-match" class="btn btn-ghost btn-sm" title="Choose this version on the Job Match page">Analyze</a>
+                                <form method="POST" action="/resumes/{{ v.version_id }}/delete">
+                                    {{ csrf_field() }}
+                                    <button type="submit" class="btn btn-danger btn-sm" aria-label="Delete" data-confirm="Delete this version? Past analyses are kept.">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if versions|length >= 2 %}
+        <form method="GET" action="/resumes/compare" style="margin-top: 20px;">
+            <h3 style="margin-bottom: 10px;">Compare two versions</h3>
+            <div class="grid grid-3">
+                <select class="input" name="a" required>
+                    {% for v in versions %}<option value="{{ v.version_id }}" {% if loop.index == 2 %}selected{% endif %}>Before: {{ v.label }}</option>{% endfor %}
+                </select>
+                <select class="input" name="b" required>
+                    {% for v in versions %}<option value="{{ v.version_id }}">After: {{ v.label }}</option>{% endfor %}
+                </select>
+                <select class="input" name="job">
+                    <option value="">No job (skills and quality only)</option>
+                    {% for j in saved_jobs %}<option value="{{ j.job_id }}">Against: {{ j.title or "Untitled job" }}</option>{% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 12px;"><i class="fa-solid fa-code-compare"></i> Compare</button>
+        </form>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-regular fa-folder-open"></i>
+            <h3>No versions yet</h3>
+            <p>Upload your current resume as your first version.</p>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="card">
+        {{ csrf_field() }}
+        <div class="card-head"><h2><i class="fa-solid fa-plus"></i> Add a version</h2></div>
+        <div class="field">
+            <label for="label">Label</label>
+            <input class="input" id="label" name="label" maxlength="100" required placeholder="e.g. v2 - added Docker project">
+        </div>
+        <div class="field">
+            <label>Resume PDF (max 5 MB)</label>
+            <div class="dropzone">
+                <input type="file" name="resume" accept=".pdf" required>
+                <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <strong>Drop your PDF here</strong>
+                <span class="dropzone-file"></span>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save version</button>
+        <p class="muted small" style="margin-top: 10px;">Earlier versions are never overwritten.</p>
+    </form>
+
+</div>
+
+<div class="section-title">
+    <h2>Score over time</h2>
+    <p>Job match scores for your saved jobs, in the order you ran them</p>
+</div>
+
+{% if history %}
+<div class="grid grid-2">
+    {% for series in history[:4] %}
+    <div class="card">
+        <h3 style="margin-bottom: 10px;">{{ series.job }}</h3>
+        {{ chart("history-" ~ loop.index, "line", {
+            "labels": series.points|map(attribute="label")|list,
+            "datasets": [{"label": "Job match score", "data": series.points|map(attribute="score")|list}],
+            "max": 100
+        }, "Job match score over time for " ~ series.job) }}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+    <i class="fa-solid fa-chart-line"></i>
+    <h3>No history yet</h3>
+    <p>Save a job, then run Job Match with your resume versions against it to see your progress here.</p>
+    <a href="/jobs" class="btn btn-primary">Saved jobs</a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}{% if history %}{{ chart_script() }}{% endif %}{% endblock %}

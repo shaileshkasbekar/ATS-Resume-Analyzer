@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% from "_macros.html" import level %}
+
+{% block title %}Compare Jobs{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Multiple job comparison</span>
+        <h1>{{ version.label }} vs {{ c.rows|length }} jobs</h1>
+        <p>Best match first. Scored with each job's saved requirements and the rule-based engine, so all jobs are compared the same way.</p>
+    </div>
+    <a href="/jobs" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Saved jobs</a>
+</div>
+
+<div class="stack">
+
+    <div class="card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Job</th><th>Match</th><th>Required</th><th>Preferred</th><th>Experience</th><th>Missing critical</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for r in c.rows %}
+                    <tr>
+                        <td><strong>{{ r.title }}</strong>{% if r.company %}<div class="muted small">{{ r.company }}</div>{% endif %}</td>
+                        <td><span class="badge tint-{{ level(r.score) }}">{{ "%.0f"|format(r.score) }}%</span></td>
+                        <td>{{ r.required_matched }} / {{ r.required_total }}</td>
+                        <td>{{ r.preferred_matched }} / {{ r.preferred_total }}</td>
+                        <td class="small">{% if r.experience is none %}<span class="muted">not stated</span>{% else %}{{ "%.0f"|format(r.experience) }}%{% endif %}</td>
+                        <td class="small">{{ r.missing_critical|join(", ") or "—" }}</td>
+                        <td><a href="/job-match?job={{ r.job_id }}" class="btn btn-ghost btn-sm">Full analysis</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid grid-3">
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-layer-group"></i> Asked by several jobs</h2></div>
+            {% if c.common_skills %}<div class="chips">{% for s in c.common_skills %}<span class="chip chip-primary">{{ s }}</span>{% endfor %}</div>{% else %}<p class="empty">No required skill appears in more than one job.</p>{% endif %}
+        </div>
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-bolt"></i> Gaps worth closing first</h2></div>
+            {% if c.shared_gaps %}
+            <p class="muted small" style="margin-bottom: 8px;">Missing for two or more of these jobs:</p>
+            <div class="chips">{% for s in c.shared_gaps %}<span class="chip chip-low">{{ s }}</span>{% endfor %}</div>
+            {% else %}<p class="empty">No gap is shared by several jobs.</p>{% endif %}
+        </div>
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-compass"></i> Roles that fit your skills</h2></div>
+            {% if c.suggested_roles %}
+            <ul class="list">
+                {% for r in c.suggested_roles %}
+                <li><i class="fa-solid fa-briefcase" style="color: var(--primary);"></i><span>{{ r.role }} <span class="badge tint-{{ level(r.score) }}">{{ "%.0f"|format(r.score) }}%</span></span></li>
+                {% endfor %}
+            </ul>
+            <p class="muted small" style="margin-top: 10px;">Based on the skills your resume demonstrates and each role's typical requirements.</p>
+            {% else %}<p class="empty">No role data.</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-fingerprint"></i> Skills unique to one job</h2></div>
+        <div class="grid grid-2">
+            {% for r in c.rows %}
+            <div>
+                <h3 style="margin-bottom: 6px;">{{ r.title }}</h3>
+                {% if r.unique_skills %}<div class="chips">{% for s in r.unique_skills %}<span class="chip">{{ s }}</span>{% endfor %}</div>{% else %}<p class="empty">None</p>{% endif %}
+                {% if r.top_actions %}<p class="muted small" style="margin-top: 8px;">Main improvement: {{ r.top_actions[0] }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

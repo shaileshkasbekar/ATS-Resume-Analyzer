@@ -1,0 +1,35 @@
+{# Chart + accessible table view.
+   chart_id: unique id; kind: "line" or "bar"; data: {"labels": [], "datasets": [{"label", "data"}], "max", "horizontal"} #}
+
+{% macro chart(chart_id, kind, data, caption) -%}
+<div class="chart-box">
+    <canvas data-chart="{{ kind }}" data-source="{{ chart_id }}-data" role="img" aria-label="{{ caption }}"></canvas>
+</div>
+<script type="application/json" id="{{ chart_id }}-data">{{ data|tojson }}</script>
+<details class="chart-table">
+    <summary>Show as table</summary>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for set in data.datasets %}<th>{{ set.label }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for label in data.labels %}
+                {% set row = loop.index0 %}
+                <tr>
+                    <td>{{ label }}</td>
+                    {% for set in data.datasets %}<td>{{ set.data[row] if set.data[row] is not none else "—" }}</td>{% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>
+{%- endmacro %}
+
+{% macro chart_script() -%}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{%- endmacro %}

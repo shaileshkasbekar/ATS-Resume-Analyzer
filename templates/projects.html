@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Project Ideas{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Project recommendations</span>
+        <h1>Projects for {{ row.job_title or "this job" }}</h1>
+        <p>Portfolio projects that show the skills this job asks for and your resume is missing or only lists.</p>
+    </div>
+    <a href="/history/jd/{{ row.jd_result_id }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Job match</a>
+</div>
+
+<form method="POST" data-loading style="margin-bottom: 18px;">
+    {{ csrf_field() }}
+    <button type="submit" class="btn {{ 'btn-ghost' if content else 'btn-primary' }}">
+        <i class="fa-solid fa-lightbulb"></i> {{ "Generate new ideas" if content else "Generate project ideas" }}
+    </button>
+</form>
+
+{% if content %}
+<div class="stack">
+    {% for p in content.ideas %}
+    <div class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-diagram-project"></i> {{ p.title }}</h2>
+            {% if p.extends %}<span class="badge tint-info">Extends: {{ p.extends }}</span>{% endif %}
+        </div>
+        <p>{{ p.objective }}</p>
+        {% if p.relevance %}<p class="muted small" style="margin-top: 6px;"><strong>Why it helps:</strong> {{ p.relevance }}</p>{% endif %}
+        <div class="grid grid-2" style="margin-top: 14px;">
+            <div>
+                <p class="muted small">Core features</p>
+                <ul class="list list-tip">{% for f in p.features %}<li><i class="fa-solid fa-check"></i><span>{{ f }}</span></li>{% endfor %}</ul>
+                {% if p.advanced %}
+                <p class="muted small" style="margin-top: 12px;">Optional advanced features</p>
+                <ul class="list list-tip">{% for f in p.advanced %}<li><i class="fa-solid fa-rocket"></i><span>{{ f }}</span></li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            <div>
+                {% if p.stack %}<p class="muted small">Suggested stack</p><div class="chips" style="margin-bottom: 12px;">{% for s in p.stack %}<span class="chip chip-primary">{{ s }}</span>{% endfor %}</div>{% endif %}
+                {% if p.skills %}<p class="muted small">Skills it demonstrates</p><div class="chips" style="margin-bottom: 12px;">{% for s in p.skills %}<span class="chip chip-good">{{ s }}</span>{% endfor %}</div>{% endif %}
+                {% if p.architecture %}<p class="muted small">Architecture</p><p class="small">{{ p.architecture }}</p>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+    <i class="fa-solid fa-lightbulb"></i>
+    <h3>No ideas yet</h3>
+    <p>Generate ideas based on this job and your existing projects.</p>
+</div>
+{% endif %}
+
+{% endblock %}

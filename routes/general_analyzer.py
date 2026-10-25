@@ -7,7 +7,7 @@ from resume_parser.ai_client import get_score
 
 from werkzeug.utils import secure_filename
 
-from models.database import get_db_connection
+from models.database import get_db_connection, table_columns
 from config import Config
 
 import os
@@ -424,6 +424,8 @@ def analyze():
 
         cursor = connection.cursor()
 
+        general_result_id = None
+
 
         try:
 
@@ -571,6 +573,32 @@ def analyze():
 
 
             # =====================================
+            # NEWER COLUMNS (database upgrade v5)
+            # =====================================
+
+            # Read the new id before any other query resets lastrowid
+
+            general_result_id = cursor.lastrowid
+
+            extra = {
+                "scoring_version": result.get("scoring_version"),
+                "experience_level": result.get("experience_level"),
+                "issues": json.dumps(result.get("issues", {})),
+            }
+
+            columns = table_columns(cursor, "general_results")
+
+            extra = {k: v for k, v in extra.items() if k in columns}
+
+            if extra:
+                cursor.execute(
+                    "UPDATE general_results SET " + ", ".join(f"{k} = %s" for k in extra)
+                    + " WHERE general_result_id = %s",
+                    tuple(extra.values()) + (general_result_id,)
+                )
+
+
+            # =====================================
             # COMMIT
             # =====================================
 
@@ -606,6 +634,7 @@ def analyze():
 
         return render_template(
             "general_result.html",
+            report_url=f"/report/general/{general_result_id}.pdf" if general_result_id else None,
             result=result,
             filename=filename
         )

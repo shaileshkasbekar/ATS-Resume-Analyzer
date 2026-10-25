@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit job" if job else "Save a job" }}{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Saved jobs</span>
+        <h1>{{ "Edit job" if job else "Save a job" }}</h1>
+        <p>Requirements are extracted when you save, so you can reuse this job without pasting it again.</p>
+    </div>
+    <a href="/jobs" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Saved jobs</a>
+</div>
+
+<form method="POST" class="card" data-loading>
+    {{ csrf_field() }}
+    <div class="grid grid-2">
+        <div class="field">
+            <label for="title">Job title</label>
+            <input class="input" id="title" name="title" maxlength="200" value="{{ (draft or job or {}).title or '' }}" placeholder="e.g. Junior Backend Developer">
+        </div>
+        <div class="field">
+            <label for="company">Company <span class="muted small">(optional)</span></label>
+            <input class="input" id="company" name="company" maxlength="200" value="{{ (draft or job or {}).company or '' }}">
+        </div>
+    </div>
+    <div class="field">
+        <label for="description">Job description</label>
+        <textarea class="input" id="description" name="description" minlength="100" maxlength="20000" required style="min-height: 320px;">{{ (draft or job or {}).description or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save job</button>
+</form>
+
+{% if job %}
+<form method="POST" action="/jobs/{{ job.job_id }}/delete" style="margin-top: 14px;">
+    {{ csrf_field() }}
+    <button type="submit" class="btn btn-danger" data-confirm="Delete this saved job? Past analyses are kept.">
+        <i class="fa-regular fa-trash-can"></i> Delete job
+    </button>
+</form>
+{% endif %}
+
+{% endblock %}

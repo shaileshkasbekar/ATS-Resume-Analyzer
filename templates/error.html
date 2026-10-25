@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ code }}{% endblock %}
+
+{% block content %}
+
+<div class="card empty-state" style="margin-top: 40px;">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <h3>Error {{ code }}</h3>
+    <p>{{ message }}</p>
+    <a href="/" class="btn btn-primary"><i class="fa-solid fa-house"></i> Go home</a>
+</div>
+
+{% endblock %}

@@ -18,6 +18,7 @@
             <p class="sub">It takes less than a minute.</p>
 
             <form method="POST">
+{{ csrf_field() }}
 
                 <div class="field">
                     <label for="fullname">Full name</label>
@@ -42,7 +43,7 @@
                     <div class="input-wrap">
                         <i class="fa-solid fa-lock"></i>
                         <input class="input" type="password" id="password" name="password"
-                               placeholder="At least 6 characters" minlength="6" required>
+                               placeholder="At least 8 characters" minlength="8" required>
                     </div>
                 </div>
 

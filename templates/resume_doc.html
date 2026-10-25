@@ -1,0 +1,14 @@
+<div class="resume">
+    <h1>{{ doc.name }}</h1>
+    {% if doc.contact %}<p class="contact">{{ doc.contact }}</p>{% endif %}
+    {% for section in doc.sections %}
+    <h2>{{ section.title }}</h2>
+    {% for item in section["items"] %}
+    {% if item.bullet %}
+    <p class="li">- {{ item.text }}</p>
+    {% else %}
+    <p>{{ item.text }}</p>
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+</div>

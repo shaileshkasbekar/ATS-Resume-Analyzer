@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% from "_journey.html" import journey %}
+
+{% block title %}Mock Interview{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Mock interview</span>
+        <h1>Practice for {{ row.job_title or "this job" }}</h1>
+        <p>Practice questions based on your resume and the job. These are for practice — no tool can predict an employer's exact questions.</p>
+    </div>
+    <a href="/history/jd/{{ row.jd_result_id }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Job match</a>
+</div>
+
+{{ journey(row.jd_result_id, "prepare") }}
+
+<form method="POST" data-loading style="margin-bottom: 18px;">
+    {{ csrf_field() }}
+    <button type="submit" class="btn {{ 'btn-ghost' if content else 'btn-primary' }}">
+        <i class="fa-solid fa-comments"></i> {{ "Generate new questions" if content else "Generate questions" }}
+    </button>
+</form>
+
+{% if content %}
+<div class="stack" data-interview>
+    <nav class="question-pager" aria-label="Questions" data-pager></nav>
+    {% for q in content.questions %}
+    {% set previous = answers.get(loop.index0) %}
+    <div class="card answer-box" data-question="{{ loop.index0 }}" data-jd="{{ row.jd_result_id }}" data-answered="{{ 1 if previous else 0 }}">
+        <div class="card-head">
+            <h2 style="font-size: 16px;">{{ loop.index }}. {{ q.question }}</h2>
+            <span class="badge tint-primary">{{ labels.get(q.category, q.category) }}</span>
+        </div>
+        {% if q.follow_up %}<p class="muted small" style="margin-bottom: 10px;">Possible follow-up: {{ q.follow_up }}</p>{% endif %}
+
+        <label class="sr-only" for="answer-{{ loop.index0 }}">Your answer</label>
+        <textarea class="input" id="answer-{{ loop.index0 }}" maxlength="4000" placeholder="Type your answer (or use the microphone)…" data-answer>{{ previous.answer if previous else "" }}</textarea>
+
+        <div class="actions" style="margin-top: 10px;">
+            <button type="button" class="btn btn-primary btn-sm" data-submit-answer><i class="fa-solid fa-paper-plane"></i> Get feedback</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-voice hidden><i class="fa-solid fa-microphone"></i> Speak</button>
+            <span class="muted small" data-message></span>
+        </div>
+
+        <div data-feedback {% if not previous %}hidden{% endif %} style="margin-top: 14px;">
+            {% if previous %}
+            {% set fb = previous.feedback %}
+            <p class="muted small" style="margin-bottom: 8px;">Feedback on your saved answer:</p>
+            <div class="grid grid-2">
+                <div><p class="section-label">Scores</p>{% for c in criteria %}{% if fb.scores and fb.scores[c] is not none %}<div class="meter"><div class="meter-head"><span>{{ c|capitalize }}</span><strong>{{ fb.scores[c]|int }}%</strong></div><div class="meter-track"><div class="meter-fill" style="width: {{ fb.scores[c] }}%"></div></div></div>{% endif %}{% endfor %}</div>
+                <div><p class="section-label">Feedback</p><p class="small">{{ fb.feedback }}</p>{% if fb.improved_answer %}<p class="section-label" style="margin-top: 12px;">Stronger answer (for learning)</p><p class="small">{{ fb.improved_answer }}</p>{% endif %}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="actions" style="margin-top: 14px; justify-content: space-between;">
+            <button type="button" class="btn btn-ghost btn-sm" data-prev-question {% if loop.first %}disabled{% endif %}><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Previous</button>
+            <span class="muted small">Question {{ loop.index }} of {{ content.questions|length }}</span>
+            <button type="button" class="btn btn-ghost btn-sm" data-next-question {% if loop.last %}disabled{% endif %}>Next <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+        </div>
+
+        {% if q.suggested_answer %}
+        <details class="reveal" style="margin-top: 12px;">
+            <summary>Show suggested answer</summary>
+            <p class="small" style="margin-top: 8px;">{{ q.suggested_answer }}</p>
+        </details>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+    <i class="fa-solid fa-comments"></i>
+    <h3>No questions yet</h3>
+    <p>Generate technical, project, behavioral and HR practice questions for this job.</p>
+</div>
+{% endif %}
+
+{% endblock %}

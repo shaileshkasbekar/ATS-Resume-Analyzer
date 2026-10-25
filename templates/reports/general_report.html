@@ -1,0 +1,29 @@
+<h1>Resume Quality Report</h1>
+<p class="muted">Resume: {{ row.file_name }} | {{ generated }}{% if row.scoring_version %} | Scoring {{ row.scoring_version }}{% endif %}{% if row.experience_level %} | Level: {{ row.experience_level }}{% endif %}</p>
+
+<h2>Resume Quality Score: {{ "%.0f"|format(row.score|float) }} / 100</h2>
+<p class="small muted">General quality (structure, content, writing). Independent from any job match score.</p>
+
+<table>
+    <tr><th>Area</th><th>Score</th></tr>
+    <tr><td>AI overall quality</td><td>{{ "%.0f"|format((row.ai_quality or 0)|float) }}%</td></tr>
+    <tr><td>Summary</td><td>{{ "%.0f"|format((row.summary_quality or 0)|float) }}%</td></tr>
+    <tr><td>Experience</td><td>{{ "%.0f"|format((row.experience_quality or 0)|float) }}%</td></tr>
+    <tr><td>Projects</td><td>{{ "%.0f"|format((row.project_quality or 0)|float) }}%</td></tr>
+    <tr><td>Skills</td><td>{{ "%.0f"|format((row.skills_quality or 0)|float) }}%</td></tr>
+    <tr><td>Clarity</td><td>{{ "%.0f"|format((row.clarity_quality or 0)|float) }}%</td></tr>
+</table>
+
+<h2>Checks</h2>
+<p>Email: {{ "found" if row.email_detected else "missing" }} | Phone: {{ "found" if row.phone_detected else "missing" }} |
+   LinkedIn: {{ "found" if row.linkedin_detected else "missing" }} | GitHub: {{ "found" if row.github_detected else "missing" }} |
+   Words: {{ row.word_count }}</p>
+<p>Sections found: {{ sections|dictsort|selectattr(1)|map(attribute=0)|join(", ") or "-" }}</p>
+<p>Skills found: {{ skills|join(", ") or "-" }}</p>
+
+{% if issues.confirmed %}<h2>Confirmed issues</h2>{% for i in issues.confirmed %}<p class="li">- {{ i.text }}</p>{% endfor %}{% endif %}
+{% if issues.potential %}<h2>Potential issues</h2>{% for i in issues.potential %}<p class="li">- {{ i.text }}</p>{% endfor %}{% endif %}
+
+{% if strengths %}<h2>Strengths</h2>{% for s in strengths %}<p class="li">- {{ s }}</p>{% endfor %}{% endif %}
+{% if weaknesses %}<h2>Weaknesses</h2>{% for s in weaknesses %}<p class="li">- {{ s }}</p>{% endfor %}{% endif %}
+{% if recommendations %}<h2>Recommended improvements</h2>{% for s in recommendations %}<p class="li">- {{ s }}</p>{% endfor %}{% endif %}

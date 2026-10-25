@@ -105,6 +105,23 @@ def extract_skills(text, extra_skills=None):
         "Matplotlib",
         "Scikit-learn",
 
+        # Backend architecture / messaging
+        "Microservices",
+        "Kafka",
+        "RabbitMQ",
+        "Redis",
+        "Elasticsearch",
+        "Maven",
+        "Gradle",
+        "Laravel",
+        "Ruby on Rails",
+        "Swift",
+
+        # Process
+        "Agile",
+        "Scrum",
+        "Unit Testing",
+
         # Testing / DevOps
         "Jest",
         "JUnit",
@@ -147,7 +164,6 @@ SKILL_ALIASES = {
     "Express": ["ExpressJS", "Express.js"],
     "PostgreSQL": ["Postgres"],
     "MongoDB": ["Mongo"],
-    "Google Cloud": ["GCP"],
     "Kubernetes": ["K8s"],
     "OOP": ["OOPs", "Object Oriented Programming"],
     "DBMS": ["Database Management System"],
@@ -195,6 +211,16 @@ SKILL_ALIASES = {
     "SDLC": ["STLC", "Software Development Life Cycle"],
     "Bug Tracking": ["Jira", "Bugzilla", "Defect Tracking", "Bug Reporting"],
     "API Testing": ["Rest Assured", "RestAssured"],
+
+    # Backend architecture
+    "Microservices": ["Microservice", "Microservice Architecture"],
+    "Kafka": ["Apache Kafka"],
+    "Unit Testing": ["Unit Tests", "Unit Test"],
+    "Agile": ["Agile Methodology", "Agile Development"],
+    "Ruby on Rails": ["Rails"],
+    "AWS": ["Amazon Web Services"],
+    "Google Cloud": ["GCP", "Google Cloud Platform"],
+    "Azure": ["Microsoft Azure"],
 }
 
 
@@ -310,6 +336,50 @@ IMPLIED_BY = {
     "dart": ["Flutter"],
     "rest api": ["FastAPI", "Express", "Spring Boot"],
 }
+
+
+def skill_names(skill):
+    """
+    The skill's main name plus all its other names.
+    """
+
+    names = [skill]
+
+    for canonical, aliases in SKILL_ALIASES.items():
+
+        if canonical.lower() == skill.lower():
+            names += aliases
+
+    return names
+
+
+def find_skill_span(text, skill):
+    """
+    (start, end) of the first place the skill or one of its other
+    names appears in the text, or None.
+    """
+
+    text = text.lower()
+
+    best = None
+
+    for name in skill_names(skill):
+
+        match = re.search(_word_pattern(name), text)
+
+        if match and (best is None or match.start() < best[0]):
+            best = (match.start(), match.end())
+
+    return best
+
+
+def _word_pattern(name):
+
+    return (
+        r"(?<![\w+#.])"
+        + re.escape(name.lower())
+        + r"(?![\w+#]|\.\w)"
+    )
 
 
 def _contains_word(text, name):

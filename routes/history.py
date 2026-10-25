@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, session, redirect
+from flask import Blueprint, render_template, request, session, redirect
 from models.database import get_db_connection, table_columns
 import json
 
 from resume_parser.recommendation import build_learning_plan
 from routes.job_match import render_job_match_result
+from models import repository
 
 
 history = Blueprint("history", __name__)
@@ -13,6 +14,77 @@ history = Blueprint("history", __name__)
 # HISTORY PAGE
 # =========================================
 
+PAGE_SIZE = 15
+
+SORTS = {
+    "date_desc": "upload_date DESC, analysis_id DESC",
+    "date_asc": "upload_date ASC, analysis_id ASC",
+    "score_desc": "score DESC, upload_date DESC",
+    "score_asc": "score ASC, upload_date DESC",
+}
+
+TYPES = {
+    "ats": "ATS Analysis",
+    "general": "General Analysis",
+    "jd": "Job Match",
+}
+
+
+def _history_union(cursor, user_id):
+    """
+    All analyses of the user as one query (ATS, general, job match).
+    """
+
+    query = """
+    SELECT resumes.resume_id, resume_results.result_id AS analysis_id, resumes.file_name,
+           job_roles.role_name, resume_results.ats_score AS score, resumes.upload_date,
+           'ATS Analysis' AS analysis_type
+    FROM resumes
+    JOIN resume_results ON resumes.resume_id = resume_results.resume_id
+    JOIN job_roles ON resume_results.role_id = job_roles.role_id
+    WHERE resumes.user_id = %s
+
+    UNION ALL
+
+    SELECT resumes.resume_id, general_results.general_result_id AS analysis_id, resumes.file_name,
+           'General Resume' AS role_name, general_results.score AS score, resumes.upload_date,
+           'General Analysis' AS analysis_type
+    FROM resumes
+    JOIN general_results ON resumes.resume_id = general_results.resume_id
+    WHERE resumes.user_id = %s
+    """
+
+    params = [user_id, user_id]
+
+    # Job matches (only after the database upgrade)
+
+    jd_columns = table_columns(cursor, "jd_results")
+
+    if jd_columns:
+
+        # "Job title · Company" when the company column exists (upgrade v4)
+
+        job_label = (
+            "NULLIF(CONCAT_WS(' · ', NULLIF(jd_results.job_title, ''), NULLIF(jd_results.company_name, '')), '')"
+            if "company_name" in jd_columns else "NULLIF(jd_results.job_title, '')"
+        )
+
+        query += """
+        UNION ALL
+
+        SELECT resumes.resume_id, jd_results.jd_result_id AS analysis_id, resumes.file_name,
+               COALESCE(""" + job_label + """, 'Job description') AS role_name,
+               jd_results.score AS score, resumes.upload_date, 'Job Match' AS analysis_type
+        FROM resumes
+        JOIN jd_results ON resumes.resume_id = jd_results.resume_id
+        WHERE resumes.user_id = %s
+        """
+
+        params.append(user_id)
+
+    return query, params
+
+
 @history.route("/history")
 def view_history():
 
@@ -21,99 +93,73 @@ def view_history():
 
     user_id = session["user_id"]
 
+    # Filters from the query string (validated against fixed lists)
+
+    search = request.args.get("q", "").strip()[:100]
+    kind = request.args.get("type", "")
+    role = request.args.get("role", "").strip()[:200]
+    sort = request.args.get("sort", "date_desc")
+
+    sort = sort if sort in SORTS else "date_desc"
+    kind = kind if kind in TYPES else ""
+
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except ValueError:
+        page = 1
+
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
 
-    query = """
+    union, params = _history_union(cursor, user_id)
 
-    SELECT
-        resumes.resume_id,
-        resume_results.result_id AS analysis_id,
-        resumes.file_name,
-        job_roles.role_name,
-        resume_results.ats_score AS score,
-        resumes.upload_date,
-        'ATS Analysis' AS analysis_type
+    where = []
+    filter_params = []
 
-    FROM resumes
+    if search:
+        where.append("(file_name LIKE %s OR role_name LIKE %s)")
+        filter_params += [f"%{search}%", f"%{search}%"]
 
-    JOIN resume_results
-        ON resumes.resume_id = resume_results.resume_id
+    if kind:
+        where.append("analysis_type = %s")
+        filter_params.append(TYPES[kind])
 
-    JOIN job_roles
-        ON resume_results.role_id = job_roles.role_id
+    if role:
+        where.append("role_name = %s")
+        filter_params.append(role)
 
-    WHERE resumes.user_id = %s
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
 
+    cursor.execute(f"SELECT COUNT(*) AS n FROM ({union}) h{where_sql}", tuple(params + filter_params))
 
-    UNION ALL
+    total = cursor.fetchone()["n"]
 
-
-    SELECT
-        resumes.resume_id,
-        general_results.general_result_id AS analysis_id,
-        resumes.file_name,
-        'General Resume' AS role_name,
-        general_results.score AS score,
-        resumes.upload_date,
-        'General Analysis' AS analysis_type
-
-    FROM resumes
-
-    JOIN general_results
-        ON resumes.resume_id = general_results.resume_id
-
-    WHERE resumes.user_id = %s
-
-    """
-
-    params = [user_id, user_id]
-
-
-    # Job matches (only after the database upgrade)
-
-    if table_columns(cursor, "jd_results"):
-
-        query += """
-
-        UNION ALL
-
-        SELECT
-            resumes.resume_id,
-            jd_results.jd_result_id AS analysis_id,
-            resumes.file_name,
-            COALESCE(NULLIF(jd_results.job_title, ''), 'Job description') AS role_name,
-            jd_results.score AS score,
-            resumes.upload_date,
-            'Job Match' AS analysis_type
-
-        FROM resumes
-
-        JOIN jd_results
-            ON resumes.resume_id = jd_results.resume_id
-
-        WHERE resumes.user_id = %s
-
-        """
-
-        params.append(user_id)
-
-
-    query += " ORDER BY upload_date DESC"
+    pages = max(1, -(-total // PAGE_SIZE))
+    page = min(page, pages)
 
     cursor.execute(
-        query,
-        tuple(params)
+        f"SELECT * FROM ({union}) h{where_sql} ORDER BY {SORTS[sort]} LIMIT %s OFFSET %s",
+        tuple(params + filter_params + [PAGE_SIZE, (page - 1) * PAGE_SIZE])
     )
 
     history_data = cursor.fetchall()
+
+    cursor.execute(f"SELECT DISTINCT role_name FROM ({union}) h ORDER BY role_name", tuple(params))
+
+    roles = [r["role_name"] for r in cursor.fetchall() if r["role_name"]]
 
     cursor.close()
     connection.close()
 
     return render_template(
         "history.html",
-        history_data=history_data
+        history_data=history_data,
+        total=total,
+        page=page,
+        pages=pages,
+        filters={"q": search, "type": kind, "role": role, "sort": sort},
+        roles=roles,
+        has_versions=repository.has_table("resume_versions")
     )
 
 
@@ -303,9 +349,33 @@ def view_general_result(result_id):
         result["ai_recommendations"] = []
 
 
+
+    # Saved by database upgrade v5 (older rows have none)
+
+
+
+    try:
+
+
+        result["issues"] = json.loads(data.get("issues") or "{}")
+
+
+    except ValueError:
+
+
+        result["issues"] = {}
+
+
+
+    result["experience_level"] = data.get("experience_level") or ""
+
+
+
     return render_template(
 
         "general_result.html",
+
+        report_url=f"/report/general/{result_id}.pdf",
 
         result=result,
 
@@ -673,6 +743,8 @@ def view_ats_result(result_id):
 
         "result.html",
 
+        report_url=f"/report/ats/{result_id}.pdf",
+
         ats_score=data["ats_score"],
 
         matched_skills=matched_skills,
@@ -850,33 +922,19 @@ def view_jd_result(result_id):
         return redirect("/history")
 
     try:
-        details = json.loads(data["details"] or "{}")
+        result = json.loads(data["details"] or "{}")
     except ValueError:
-        details = {}
+        result = {}
 
-    # Fill in anything missing so the page always renders
+    # Column values win over the JSON copy
 
-    for key in [
-        "must_have_skills", "nice_to_have_skills", "matched_skills",
-        "missing_must_have", "missing_nice_to_have", "strengths", "gaps",
-        "recommendations", "keywords_to_add"
-    ]:
-        details.setdefault(key, [])
+    result["job_title"] = data.get("job_title") or result.get("job_title", "")
+    result["company"] = data.get("company_name") or result.get("company", "")
 
-    details.setdefault("skill_evidence", {})
-    details.setdefault("required_experience", "")
-    details.setdefault("suggested_summary", "")
+    resume_text = repository.resume_text_for(repository.get_jd_result(session["user_id"], result_id) or {})
 
-    result = {
-        "job_title": data["job_title"],
-        "score": data["score"],
-        "keyword_score": data["keyword_score"],
-        "ai_relevance": data["ai_relevance"],
-        "experience_match": data["experience_match"],
-        "details": details
-    }
-
-    return render_job_match_result(result, data["file_name"])
+    return render_job_match_result(result, data["file_name"], result_id,
+                                   resume_text=resume_text, analyzed_at=data.get("created_at"))
 
 
 # =========================================

@@ -20,24 +20,50 @@ It combines a **rule-based scoring engine** (skill matching, weights, technology
 - Weighted core / supporting / optional skills, per-group breakdown
 - Hybrid score: rule-based engine + AI relevance, experience and project review
 
-### 🤝 Job description match
-- Paste any real job posting (LinkedIn, Naukri, company site)
-- AI extracts must-have and nice-to-have skills; the code then verifies each one in the resume itself
-- Match score, missing skills, **keywords to add**, and a **professional summary rewritten for that job**
+### 🤝 Job description match (primary feature)
+- Paste a job posting, upload it as PDF/TXT, or pick a predefined role
+- Requirements extracted into mandatory / preferred skills (with "A or B" alternatives), experience, education, certifications, responsibilities and soft skills
+- Every requirement is labelled exact / alias / semantic / missing, with the resume line that proves it
+- **Job Match Score** with every component and every lost point explained (versioned formula in `resume_parser/scoring_config.py`)
+- AI output is validated: requirements must appear in the posting, evidence quotes must appear in the resume, and instructions hidden inside documents are ignored
 
-### 🎓 Learning plan
-- For every missing skill: steps to learn it, a free official resource, a project idea that proves it on a resume, and a time estimate
-- Ordered by importance (must-have first)
+### ✨ AI resume improvement assistant
+- Rewrite suggestions for the summary, experience and project bullets, aimed at the target job
+- Each shows the original, the improved version (editable), the reason, the job requirement and the evidence
+- Accept or reject each suggestion; the original resume is never changed
+- Guard rails in code: the original must exist in the resume, rewrites cannot add skills the bullet never had, invented numbers become **[add real number]**
 
-### ✍️ General resume check
-- Section detection from real headings (Education, Experience, Projects, Skills, …)
-- Contact info, LinkedIn / GitHub, length
-- **Writing quality**: numbers that show impact, action verbs, weak phrases ("responsible for"), personal pronouns
-- AI review of summary, experience, projects, skills and clarity
+### 📄 Job-specific optimized resume
+- Builds a tailored resume from your resume + accepted suggestions
+- Templates: Classic, Modern, Technical, Fresher — one column, standard headings, selectable text
+- Preview, download as PDF, or save as a new resume version
 
-### 📊 Dashboard and history
-- Average and best scores, all past analyses with search and filter
-- Responsive UI with automatic dark mode
+### 🗂️ Resume versions, saved jobs, multi-job comparison
+- Keep labelled resume versions; compare two versions side by side (skills added/removed, changed bullets)
+- Against a saved job, see **which edits changed the score and by how much**
+- Save job descriptions once (requirements extracted and stored), edit, reuse, and compare one resume against several jobs: common skills, gaps shared by several jobs, suggested roles
+
+### 🎓 Learning roadmap, project ideas, mock interview
+- Roadmap from missing requirements (required first) with objectives, exercises, project extensions and progress tracking
+- Project recommendations that prove missing skills and avoid duplicating existing projects
+- Mock interview: technical, project, skill, behavioral and HR questions, answer feedback (relevance, correctness, clarity, completeness, examples), optional voice input
+
+### ✍️ Resume quality check
+- Section detection from real headings, contact info, LinkedIn / GitHub, length
+- Writing quality: impact numbers, action verbs, weak phrases, pronouns, repetition, vague bullets
+- Adapts to experience level (freshers are not penalized for no work history)
+- **Confirmed vs potential issues**, including PDF reading problems (unreadable icons, multi-column layouts)
+
+### 📊 Dashboard, history and reports
+- Real statistics and charts: job match history, most frequently missing skills, skills demonstrated vs required, roadmap progress
+- History with search, filters (type, role/job), sorting and pagination
+- Professional **PDF reports** for every analysis and the learning roadmap
+
+### 🔒 Security
+- Password hashing, login rate limiting, CSRF protection on every form, secure session cookies
+- Every record is checked against the logged-in user; resumes are stored outside the public folder
+- File type checks (real PDF signature), size limit, safe handling of broken PDFs
+- Uploaded documents are treated as untrusted: instructions inside them are ignored and AI output is validated
 
 ---
 
@@ -76,27 +102,38 @@ If the AI is unavailable, the app still works and shows the rule-based score.
 
 ```
 ATS_Resume_Analyzer/
-├── app.py                    # Flask app, registers blueprints
+├── app.py                    # Flask app, registers blueprints, error pages
 ├── config.py                 # Settings loaded from .env
+├── security.py               # CSRF, rate limiting, session settings, login_required
+├── pdf_export.py             # HTML -> PDF (PyMuPDF) for reports and resumes
 ├── database/
 │   ├── schema.sql            # Tables + default roles and skills
-│   ├── upgrade_v3.sql        # Skill evidence, job match table, 5 more roles
+│   ├── upgrade_v3.sql … v5   # Non-destructive upgrades (only add tables/columns)
 │   └── run_sql.py            # Runs a .sql file using the .env settings
-├── models/database.py        # MySQL connection
+├── models/
+│   ├── database.py           # MySQL connection
+│   └── repository.py         # Owner-checked queries for the newer features
 ├── resume_parser/
 │   ├── pdf_reader.py         # PDF -> text
 │   ├── sections.py           # Splits a resume into sections by heading
 │   ├── skill_extractor.py    # Skill matching, aliases, evidence
-│   ├── ats_score.py          # Rule-based ATS engine
-│   ├── ai_client.py          # Groq client + safe JSON parsing
-│   ├── ai_analyzer.py        # AI review for a job role
-│   ├── jd_analyzer.py        # Job description matching
-│   ├── general_analyzer.py   # General checks + writing quality
-│   ├── general_ai_analyzer.py
-│   └── recommendation.py     # Learning plan for missing skills
-├── routes/                   # auth, dashboard, upload, job_match, general_analyzer, history
-├── templates/                # Jinja2 pages (base.html + pages)
-└── static/                   # app.css, script.js, uploads/
+│   ├── job_requirements.py   # Job description -> structured requirements
+│   ├── job_matcher.py        # Job Match engine + explainable score
+│   ├── scoring_config.py     # Score weights and version (edit to tune)
+│   ├── ai_client.py          # Groq client, JSON mode, untrusted-input rules
+│   ├── ai_validation.py      # Validation of AI output (quotes, scores, lists)
+│   ├── improvement.py        # Resume improvement assistant
+│   ├── resume_builder.py     # Optimized resume + templates
+│   ├── version_compare.py    # Resume version comparison
+│   ├── multi_job.py          # One resume vs several jobs
+│   ├── career.py             # Roadmap, project ideas, mock interview
+│   ├── ats_score.py          # Rule-based ATS engine for predefined roles
+│   ├── general_analyzer.py   # Quality checks, experience level, issues
+│   └── recommendation.py     # Learning resources per skill
+├── routes/                   # one blueprint per feature
+├── templates/                # Jinja2 pages, reports/ for PDF layouts
+├── tests/                    # pytest suite (fake AI + temporary database)
+└── uploads/                  # private resume storage (not served publicly)
 ```
 
 ---
@@ -122,6 +159,8 @@ ATS_Resume_Analyzer/
    ```
    venv\Scripts\python.exe database\run_sql.py database\schema.sql
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v3.sql
+   venv\Scripts\python.exe database\run_sql.py database\upgrade_v4.sql
+   venv\Scripts\python.exe database\run_sql.py database\upgrade_v5.sql
    ```
 
 4. **Run**
@@ -131,6 +170,18 @@ ATS_Resume_Analyzer/
    Open http://127.0.0.1:5000, register an account and upload a resume (text-based PDF, max 5 MB).
 
 On macOS / Linux use `venv/bin/python` instead of `venv\Scripts\python.exe`.
+
+---
+
+## Tests
+
+```
+venv\Scripts\pip install -r requirements-dev.txt
+venv\Scripts\python.exe -m pytest tests
+```
+
+AI calls are replaced by fakes, and route tests run on a temporary MySQL database
+that is created and deleted automatically (your real data is never touched).
 
 ---
 

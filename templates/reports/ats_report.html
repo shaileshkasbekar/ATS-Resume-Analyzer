@@ -1,0 +1,29 @@
+<h1>ATS Role Report</h1>
+<p class="muted">Role: {{ row.role_name }} | Resume: {{ row.file_name }} | {{ generated }}{% if row.scoring_version %} | Scoring {{ row.scoring_version }}{% endif %}</p>
+
+<h2>ATS Score: {{ "%.0f"|format(row.ats_score|float) }} / 100</h2>
+<p class="small muted">An estimate based on the typical skills for this role (not a specific job description). Not an official employer ATS score.</p>
+
+<table>
+    <tr><th>Part</th><th>Value</th></tr>
+    <tr><td>Detected technology path</td><td>{{ row.technology_path or "-" }}</td></tr>
+    <tr><td>AI relevance</td><td>{{ "%.0f"|format((row.ai_relevance or 0)|float) }}%</td></tr>
+    <tr><td>Experience relevance</td><td>{{ "%.0f"|format((row.experience_relevance or 0)|float) }}%</td></tr>
+    <tr><td>Project relevance</td><td>{{ "%.0f"|format((row.project_relevance or 0)|float) }}%</td></tr>
+</table>
+<p class="small muted">Score = rule-based skill match 40% + AI relevance 25% + experience 15% + projects 10% + technology path strength 10%.</p>
+
+<h2>Matched skills</h2>
+<p>{{ matched|join(", ") or "-" }}</p>
+
+<h2>Missing important skills</h2>
+<p>{{ missing|join(", ") or "None" }}</p>
+
+{% if strengths %}<h2>Strengths</h2>{% for s in strengths %}<p class="li">- {{ s }}</p>{% endfor %}{% endif %}
+{% if weaknesses %}<h2>Areas to improve</h2>{% for s in weaknesses %}<p class="li">- {{ s }}</p>{% endfor %}{% endif %}
+
+{% if recommended or ai_recommendations %}
+<h2>Recommendations</h2>
+{% for s in recommended %}<p class="li">- {{ s }}</p>{% endfor %}
+{% for s in ai_recommendations if s not in recommended %}<p class="li">- {{ s }}</p>{% endfor %}
+{% endif %}

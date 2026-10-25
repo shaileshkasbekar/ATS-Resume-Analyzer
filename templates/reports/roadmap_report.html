@@ -1,0 +1,15 @@
+<h1>Learning Roadmap</h1>
+<p class="muted">{{ generated }} | {{ items|selectattr("status", "equalto", "done")|list|length }} of {{ items|length }} tasks done</p>
+
+{% for item in items %}
+<h2>{{ item.skill }} ({{ {"high": "required", "medium": "show it better", "low": "preferred"}.get(item.priority, item.priority) }}){% if item.status == "done" %} - done{% endif %}</h2>
+<p class="small muted">For: {{ item.job_title or "Job" }}</p>
+<p>{{ item.why }}</p>
+<h3>Objectives</h3>
+{% for o in item.objectives %}<p class="li">- {{ o }}</p>{% endfor %}
+<h3>Exercises</h3>
+{% for e in item.exercises %}<p class="li">- {{ e }}</p>{% endfor %}
+<p><b>Project extension:</b> {{ item.project_extension }}</p>
+<p><b>Show it:</b> {{ item.demonstrate }}</p>
+{% if item.resource_url %}<p class="small">Resource: {{ item.resource_name }} - {{ item.resource_url }}</p>{% endif %}
+{% endfor %}

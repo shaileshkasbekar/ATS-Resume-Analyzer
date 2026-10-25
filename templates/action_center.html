@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% from "_macros.html" import level, meter %}
+{% from "_journey.html" import journey %}
+
+{% macro delta(value) -%}
+{% if value > 0 %}<span class="delta-up">+{{ "%.1f"|format(value) }}</span>{% elif value < 0 %}<span class="delta-down">{{ "%.1f"|format(value) }}</span>{% else %}<span class="muted">no change</span>{% endif %}
+{%- endmacro %}
+
+{% block title %}Action Center{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Action Center</span>
+        <h1>What to do next</h1>
+        <p>Your latest findings in one place, from your saved analyses. Work through them top to bottom.</p>
+    </div>
+    {% if analyses|length > 1 %}
+    <form method="GET" class="actions">
+        <label for="jd" class="sr-only">Job match</label>
+        <select class="input" id="jd" name="jd" style="width: auto;">
+            {% for a in analyses %}
+            <option value="{{ a.jd_result_id }}" {% if current and a.jd_result_id == current.jd_result_id %}selected{% endif %}>
+                {{ a.job_title or "Job description" }} · {{ a.created_at.strftime("%d %b") if a.created_at else "" }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-ghost">Show</button>
+    </form>
+    {% endif %}
+</div>
+
+{% if not current and not general %}
+
+<div class="card empty-state">
+    <i class="fa-solid fa-list-check"></i>
+    <h3>Nothing to act on yet</h3>
+    <p>Match your resume to a job or run a quality check. Your next steps will appear here.</p>
+    <div class="actions" style="justify-content: center;">
+        <a href="/job-match" class="btn btn-primary"><i class="fa-solid fa-handshake"></i> Match a job</a>
+        <a href="/general-analyzer" class="btn btn-ghost"><i class="fa-solid fa-wand-magic-sparkles"></i> Check resume quality</a>
+    </div>
+</div>
+
+{% else %}
+
+{% if current and v5 %}{{ journey(current.jd_result_id, "match") }}{% endif %}
+
+<div class="stack">
+
+    <!-- ================= PROGRESS ================= -->
+
+    <div class="grid grid-3">
+
+        <div class="card stat">
+            <div class="stat-top">Job match{% if current %} · {{ current.job_title or "Job" }}{% endif %}</div>
+            {% if current %}
+            <div class="stat-value">{{ "%.0f"|format((current.score or 0)|float) }}%</div>
+            <span class="small">
+                {% if previous %}Since previous analysis of this job: {{ delta((current.score or 0)|float - (previous.score or 0)|float) }}
+                {% else %}<span class="muted">First analysis of this job</span>{% endif %}
+            </span>
+            {% else %}
+            <p class="empty">No job match yet. <a href="/job-match">Match a job</a></p>
+            {% endif %}
+        </div>
+
+        <div class="card stat">
+            <div class="stat-top">Resume quality</div>
+            {% if general %}
+            <div class="stat-value">{{ "%.0f"|format((general.score or 0)|float) }}%</div>
+            <span class="small">
+                {% if general_previous %}Since previous check: {{ delta((general.score or 0)|float - (general_previous.score or 0)|float) }}
+                {% else %}<span class="muted">First quality check</span>{% endif %}
+            </span>
+            {% else %}
+            <p class="empty">No quality check yet. <a href="/general-analyzer">Check quality</a></p>
+            {% endif %}
+        </div>
+
+        <div class="card stat">
+            <div class="stat-top">Learning roadmap</div>
+            {% if roadmap_total %}
+            <div class="stat-value">{{ roadmap_done }} / {{ roadmap_total }}</div>
+            {{ meter("tasks done", roadmap_done / roadmap_total * 100) }}
+            {% else %}
+            <p class="empty">No roadmap yet.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ================= JOB REQUIREMENTS ================= -->
+
+    {% if current %}
+    <div class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-circle-exclamation"></i> Missing job requirements</h2>
+            <a href="/history/jd/{{ current.jd_result_id }}" class="small">Full result</a>
+        </div>
+
+        {% if missing_required or weak_required or missing_preferred %}
+        <ul class="list">
+            {% for m in missing_required %}
+            <li><i class="fa-solid fa-circle-xmark" style="color: var(--low);"></i>
+                <span><strong>{{ m.requirement }}</strong> — required, not found in your resume.</span></li>
+            {% endfor %}
+            {% for m in weak_required %}
+            <li><i class="fa-solid fa-list" style="color: var(--ok);"></i>
+                <span><strong>{{ m.matched_skill or m.requirement }}</strong> — required, only {{ "listed in skills" if m.evidence == "listed" else "mentioned" }}. Show it in a project or job.</span></li>
+            {% endfor %}
+            {% for m in missing_preferred[:3] %}
+            <li><i class="fa-solid fa-plus" style="color: var(--info);"></i>
+                <span><strong>{{ m.requirement }}</strong> — preferred (optional).</span></li>
+            {% endfor %}
+        </ul>
+        {% if v5 %}
+        <div class="actions" style="margin-top: 14px;">
+            <a href="/assistant/{{ current.jd_result_id }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-wand-magic-sparkles"></i> Improve resume</a>
+            {% if not has_roadmap and missing_required %}
+            <form method="POST" action="/roadmap/create/{{ current.jd_result_id }}">
+                {{ csrf_field() }}
+                <button type="submit" class="btn btn-ghost btn-sm"><i class="fa-solid fa-graduation-cap"></i> Create learning roadmap</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="empty">🎉 Your resume shows every requirement of this job.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-2">
+
+        <!-- ================= SUGGESTIONS ================= -->
+
+        {% if current and v5 %}
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-wand-magic-sparkles"></i> Improvement suggestions</h2></div>
+            {% set pending = suggestions.get("pending", 0) %}
+            {% set accepted = suggestions.get("accepted", 0) %}
+            {% if pending or accepted or suggestions.get("rejected", 0) %}
+            <p><strong>{{ pending }}</strong> waiting for review · <strong>{{ accepted }}</strong> accepted</p>
+            <div class="actions" style="margin-top: 12px;">
+                <a href="/assistant/{{ current.jd_result_id }}" class="btn btn-primary btn-sm">{{ "Review suggestions" if pending else "Open assistant" }}</a>
+                {% if accepted %}<a href="/optimize/{{ current.jd_result_id }}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-file-pen"></i> Build resume</a>{% endif %}
+            </div>
+            {% else %}
+            <p class="empty">No suggestions generated for this job yet.</p>
+            <a href="/assistant/{{ current.jd_result_id }}" class="btn btn-ghost btn-sm" style="margin-top: 10px;">Get suggestions</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ================= ROADMAP TASKS ================= -->
+
+        {% if current and v5 %}
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-graduation-cap"></i> Learning tasks</h2><a href="/roadmap" class="small">Roadmap</a></div>
+            {% if roadmap_todo %}
+            <ul class="list">
+                {% for item in roadmap_todo %}
+                <li><i class="fa-regular fa-square" style="color: var(--text-3);"></i>
+                    <span>{{ item.skill }} <span class="badge tint-{{ {'high': 'low', 'medium': 'ok', 'low': 'info'}.get(item.priority, 'info') }}">{{ {"high": "Required", "medium": "Show better", "low": "Preferred"}.get(item.priority, item.priority) }}</span></span></li>
+                {% endfor %}
+            </ul>
+            {% elif has_roadmap %}
+            <p class="empty">🎉 All learning tasks for this job are done. <a href="/job-match?from={{ current.jd_result_id }}">Reanalyze</a> to see your new score.</p>
+            {% else %}
+            <p class="empty">No roadmap for this job yet.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ================= INTERVIEW ================= -->
+
+        {% if current and v5 %}
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-comments"></i> Interview preparation</h2></div>
+            {% if interview.questions %}
+            <p><strong>{{ interview.answered }}</strong> of {{ interview.questions }} practice questions answered.</p>
+            {% if interview.weakest %}
+            <p class="small" style="margin-top: 6px;">Weakest area so far: <strong>{{ interview.weakest|capitalize }}</strong> ({{ interview.averages[interview.weakest] }}%).
+                {% if interview.weakest == "examples" %}Add concrete examples from your projects.{% elif interview.weakest == "completeness" %}Give fuller answers (aim for 60-200 words).{% endif %}</p>
+            {% endif %}
+            <a href="/interview/{{ current.jd_result_id }}" class="btn btn-ghost btn-sm" style="margin-top: 10px;">Continue practice</a>
+            {% else %}
+            <p class="empty">No practice questions for this job yet.</p>
+            <a href="/interview/{{ current.jd_result_id }}" class="btn btn-ghost btn-sm" style="margin-top: 10px;">Start mock interview</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ================= QUALITY WEAKNESSES ================= -->
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> Resume weaknesses</h2>
+                {% if general %}<a href="/history/general/{{ general.general_result_id }}" class="small">Quality report</a>{% endif %}
+            </div>
+            {% if general %}
+            {% set confirmed = (general.issues_data or {}).get("confirmed", []) %}
+            {% if confirmed %}
+            <ul class="list list-low">
+                {% for i in confirmed[:4] %}<li><i class="fa-solid fa-circle-exclamation"></i><span><strong>{{ i.category }}:</strong> {{ i.text }}</span></li>{% endfor %}
+            </ul>
+            {% elif general.recommendations_data %}
+            <ul class="list list-tip">
+                {% for r in general.recommendations_data[:4] %}<li><i class="fa-solid fa-arrow-right"></i><span>{{ r }}</span></li>{% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty">No major weaknesses in your latest quality check.</p>
+            {% endif %}
+            {% else %}
+            <p class="empty">Run a <a href="/general-analyzer">quality check</a> to see writing and structure issues.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

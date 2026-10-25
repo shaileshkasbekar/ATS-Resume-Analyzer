@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Jobs{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Saved jobs</span>
+        <h1>Your saved job descriptions</h1>
+        <p>Save postings once, then analyze them with any resume version or compare several jobs at once.</p>
+    </div>
+    <a href="/jobs/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Save a job</a>
+</div>
+
+{% if jobs %}
+
+<form method="POST" action="/jobs/compare" class="stack" data-loading>
+    {{ csrf_field() }}
+
+    <div class="card">
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th style="width: 40px;"><span class="sr-only">Compare</span></th><th>Job</th><th class="hide-sm">Saved</th><th></th></tr></thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td><input type="checkbox" name="job_ids" value="{{ job.job_id }}" aria-label="Select for comparison" style="width: 18px; height: 18px; accent-color: var(--primary);"></td>
+                        <td>
+                            <a href="/jobs/{{ job.job_id }}"><strong>{{ job.title or "Untitled job" }}</strong></a>
+                            {% if job.company %}<span class="muted"> · {{ job.company }}</span>{% endif %}
+                            <div class="muted small hide-sm">{{ job.preview }}…</div>
+                        </td>
+                        <td class="muted small hide-sm" style="white-space: nowrap;">{{ job.updated_at.strftime("%d %b %Y") if job.updated_at else "" }}</td>
+                        <td>
+                            <div class="row-actions">
+                                <a href="/job-match?job={{ job.job_id }}" class="btn btn-ghost btn-sm">Analyze</a>
+                                <a href="/jobs/{{ job.job_id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" id="compare">
+        <div class="card-head"><h2><i class="fa-solid fa-table-columns" aria-hidden="true"></i> Compare one resume against several jobs</h2></div>
+        {% if versions %}
+        <div class="grid grid-2">
+            <select class="input" name="version_id" required>
+                {% for v in versions %}<option value="{{ v.version_id }}">{{ v.label }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-scale-balanced"></i> Compare selected jobs</button>
+        </div>
+        <p class="muted small" style="margin-top: 10px;">Tick at least two jobs above.</p>
+        {% else %}
+        <p class="empty">First add a resume version in <a href="/resumes">My resumes</a>.</p>
+        {% endif %}
+    </div>
+
+</form>
+
+{% else %}
+
+<div class="card empty-state">
+    <i class="fa-regular fa-bookmark"></i>
+    <h3>No saved jobs yet</h3>
+    <p>Save a job description here, or tick "Save this job" on the Job Match page.</p>
+    <a href="/jobs/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Save a job</a>
+</div>
+
+{% endif %}
+
+{% endblock %}

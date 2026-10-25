@@ -4,6 +4,10 @@
 
 {% block title %}History{% endblock %}
 
+{% macro page_link(n, text=None) -%}
+<a href="?{{ dict(filters, page=n)|urlencode }}">{{ text or n }}</a>
+{%- endmacro %}
+
 {% block content %}
 
 <div class="page-head">
@@ -11,36 +15,51 @@
     <div>
         <span class="eyebrow">History</span>
         <h1>Your past analyses</h1>
-        <p>Open any report again, or delete the ones you no longer need.</p>
+        <p>Open, download or delete any report. {{ total }} analys{{ "is" if total == 1 else "es" }}{% if filters.q or filters.type or filters.role %} match your filters{% endif %}.</p>
     </div>
 
-    <a href="/upload" class="btn btn-primary">
-        <i class="fa-solid fa-plus"></i> New analysis
-    </a>
+    <div class="actions">
+        {% if has_versions %}<a href="/resumes" class="btn btn-ghost"><i class="fa-solid fa-code-compare"></i> Compare versions</a>{% endif %}
+        <a href="/job-match" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New analysis</a>
+    </div>
 
 </div>
 
 
 <div class="card">
 
-    {% if history_data %}
-
-    <div class="toolbar">
+    <form method="GET" class="toolbar">
 
         <div class="input-wrap">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input class="input" type="search" placeholder="Search by file or role…"
-                   data-history-search>
+            <input class="input" type="search" name="q" value="{{ filters.q }}" placeholder="Search file or job…" aria-label="Search">
         </div>
 
-        <select class="input" data-history-type>
+        <select class="input" name="type" aria-label="Analysis type">
             <option value="">All types</option>
-            <option value="ATS Analysis">ATS analysis</option>
-            <option value="General Analysis">General analysis</option>
-            <option value="Job Match">Job match</option>
+            <option value="jd" {% if filters.type == "jd" %}selected{% endif %}>Job match</option>
+            <option value="ats" {% if filters.type == "ats" %}selected{% endif %}>ATS role</option>
+            <option value="general" {% if filters.type == "general" %}selected{% endif %}>General</option>
         </select>
 
-    </div>
+        <select class="input" name="role" aria-label="Target role or job">
+            <option value="">All roles / jobs</option>
+            {% for r in roles %}<option value="{{ r }}" {% if filters.role == r %}selected{% endif %}>{{ r }}</option>{% endfor %}
+        </select>
+
+        <select class="input" name="sort" aria-label="Sort">
+            <option value="date_desc" {% if filters.sort == "date_desc" %}selected{% endif %}>Newest first</option>
+            <option value="date_asc" {% if filters.sort == "date_asc" %}selected{% endif %}>Oldest first</option>
+            <option value="score_desc" {% if filters.sort == "score_desc" %}selected{% endif %}>Highest score</option>
+            <option value="score_asc" {% if filters.sort == "score_asc" %}selected{% endif %}>Lowest score</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary">Apply</button>
+        {% if filters.q or filters.type or filters.role or filters.sort != "date_desc" %}<a href="/history" class="btn btn-ghost">Clear</a>{% endif %}
+
+    </form>
+
+    {% if history_data %}
 
     <div class="table-wrap">
 
@@ -48,11 +67,11 @@
 
             <thead>
                 <tr>
-                    <th>Resume</th>
-                    <th>Type</th>
+                    <th class="hide-sm">Resume</th>
+                    <th class="hide-sm">Type</th>
                     <th>Role / job</th>
                     <th>Score</th>
-                    <th>Date</th>
+                    <th class="hide-sm">Date</th>
                     <th></th>
                 </tr>
             </thead>
@@ -63,34 +82,40 @@
 
                 {% set kind = {"General Analysis": "general", "Job Match": "jd"}.get(resume.analysis_type, "ats") %}
 
-                <tr data-history-row data-type="{{ resume.analysis_type }}">
+                <tr>
 
-                    <td>
+                    <td class="hide-sm">
                         <div class="file-cell">
                             <i class="fa-regular fa-file-pdf"></i>
                             {{ resume.file_name }}
                         </div>
                     </td>
 
-                    <td>
+                    <td class="hide-sm">
                         {% if kind == "general" %}
                         <span class="badge tint-info">General</span>
                         {% elif kind == "jd" %}
                         <span class="badge tint-good">Job match</span>
                         {% else %}
-                        <span class="badge tint-primary">ATS</span>
+                        <span class="badge tint-primary">ATS role</span>
                         {% endif %}
                     </td>
 
-                    <td>{{ resume.role_name }}</td>
+                    <td>
+                        {{ resume.role_name }}
+                        <div class="muted small show-sm">
+                            {{ {"general": "General", "jd": "Job match"}.get(kind, "ATS role") }} ·
+                            {{ resume.upload_date.strftime("%d %b %Y") if resume.upload_date and resume.upload_date.strftime is defined else "" }}
+                        </div>
+                    </td>
 
                     <td>
                         <span class="badge tint-{{ level(resume.score) }}">
-                            {{ "%.1f"|format(resume.score|float) }}%
+                            {{ "%.1f"|format((resume.score or 0)|float) }}%
                         </span>
                     </td>
 
-                    <td class="muted" style="white-space: nowrap;">
+                    <td class="muted hide-sm" style="white-space: nowrap;">
                         {% if resume.upload_date and resume.upload_date.strftime is defined %}
                         {{ resume.upload_date.strftime("%d %b %Y, %I:%M %p") }}
                         {% else %}
@@ -101,16 +126,15 @@
                     <td>
                         <div class="row-actions">
 
-                            <a href="/history/{{ kind }}/{{ resume.analysis_id }}"
-                               class="btn btn-ghost btn-sm">
-                                View
+                            <a href="/history/{{ kind }}/{{ resume.analysis_id }}" class="btn btn-ghost btn-sm">View</a>
+
+                            <a href="/report/{{ kind }}/{{ resume.analysis_id }}.pdf" class="btn btn-ghost btn-sm" aria-label="Download report" title="Download PDF report">
+                                <i class="fa-solid fa-download"></i>
                             </a>
 
-                            <form action="/history/delete/{{ kind }}/{{ resume.analysis_id }}"
-                                  method="POST">
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                        aria-label="Delete"
-                                        onclick="return confirm('Are you sure you want to delete this analysis?');">
+                            <form action="/history/delete/{{ kind }}/{{ resume.analysis_id }}" method="POST">
+                                {{ csrf_field() }}
+                                <button type="submit" class="btn btn-danger btn-sm" aria-label="Delete" data-confirm="Delete this analysis? This cannot be undone.">
                                     <i class="fa-regular fa-trash-can"></i>
                                 </button>
                             </form>
@@ -128,18 +152,34 @@
 
     </div>
 
-    <p class="empty-state" data-history-nomatch hidden>
-        No analyses match your search.
-    </p>
+    {% if pages > 1 %}
+    <nav class="pagination" aria-label="Pages">
+        {% if page > 1 %}{{ page_link(page - 1, "‹") }}{% endif %}
+        {% for n in range(1, pages + 1) %}
+        {% if n == page %}<span class="current">{{ n }}</span>
+        {% elif n == 1 or n == pages or (n - page)|abs <= 2 %}{{ page_link(n) }}
+        {% elif (n - page)|abs == 3 %}<span>…</span>{% endif %}
+        {% endfor %}
+        {% if page < pages %}{{ page_link(page + 1, "›") }}{% endif %}
+    </nav>
+    {% endif %}
+
+    {% elif filters.q or filters.type or filters.role %}
+
+    <div class="empty-state">
+        <i class="fa-solid fa-filter-circle-xmark"></i>
+        <h3>No analyses match these filters</h3>
+        <p><a href="/history">Clear filters</a></p>
+    </div>
 
     {% else %}
 
     <div class="empty-state">
         <i class="fa-regular fa-folder-open"></i>
         <h3>No analyses yet</h3>
-        <p>Upload your first resume to see your reports here.</p>
-        <a href="/upload" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> Analyze a resume
+        <p>Run your first job match to see your reports here.</p>
+        <a href="/job-match" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Match a job
         </a>
     </div>
 

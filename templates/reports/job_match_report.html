@@ -1,0 +1,64 @@
+<h1>Job Match Report</h1>
+<p class="muted">
+    {{ r.job_title or "Job" }}{% if r.company %} - {{ r.company }}{% endif %}
+    | Resume: {{ file_name }} | {{ generated }} | Scoring {{ r.scoring_version }}
+</p>
+
+<h2>Job Match Score: {{ "%.0f"|format(r.score|float) }} / 100</h2>
+<p class="small muted">An estimate made by ATS Resume Analyzer from the job description you provided. It is not the score any particular employer's ATS will give.</p>
+
+<table>
+    <tr><th>Component</th><th>Score</th><th>Points</th><th>Explanation</th></tr>
+    {% for c in r.components %}
+    <tr>
+        <td>{{ c.label }}</td>
+        <td>{% if c.applicable %}{{ "%.0f"|format(c.score) }}%{% else %}n/a{% endif %}</td>
+        <td>{% if c.applicable %}{{ c.points }} / {{ c.max_points }}{% else %}not counted{% endif %}</td>
+        <td>{{ c.explanation }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% for title, matches in [("Required skills", r.mandatory), ("Preferred skills", r.preferred)] if matches %}
+<h2>{{ title }}</h2>
+<table>
+    <tr><th>Requirement</th><th>Result</th><th>Evidence in resume</th></tr>
+    {% for m in matches %}
+    <tr>
+        <td>{{ m.requirement }}</td>
+        <td>
+            {% if m.status == "missing" %}Missing{% else %}{{ {"exact": "Exact", "alias": "Alias", "semantic": "By meaning"}.get(m.match_type, m.match_type) }}
+            - {{ {"experience": "work experience", "project": "project", "listed": "skills list only", "mentioned": "mentioned only", "unknown": "found"}.get(m.evidence, m.evidence) }}{% endif %}
+        </td>
+        <td>{{ m.snippet or "-" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endfor %}
+
+<h2>Experience and qualifications</h2>
+<p>
+    Job asks for:
+    {% if r.experience.required_years is none %}not stated{% elif r.experience.required_years == 0 %}entry level{% else %}{{ "%g"|format(r.experience.required_years) }}+ years{% endif %}.
+    Resume shows:
+    {% if r.experience.candidate_years is none %}no dated work experience{% else %}about {{ "%g"|format(r.experience.candidate_years) }} years{% endif %}.
+</p>
+{% if r.education.required_level is not none %}
+<p>Degree requirement: {{ "met" if r.education.met else "not clearly met" }}{% if r.education.in_progress %} (in progress){% endif %}.</p>
+{% endif %}
+{% for c in r.certifications %}<p>Certification "{{ c.requirement }}": {{ "found" if c.met else "not found" }}.</p>{% endfor %}
+
+{% if r.strengths %}
+<h2>Strengths</h2>
+{% for s in r.strengths %}<p class="li">- {{ s.text }}{% if s.evidence %} <span class="muted">("{{ s.evidence }}")</span>{% endif %}</p>{% endfor %}
+{% endif %}
+
+{% if r.deductions %}
+<h2>Where points were lost</h2>
+{% for d in r.deductions %}<p class="li">- {{ d.component }} (-{{ d.points }}): {{ d.reason }}</p>{% endfor %}
+{% endif %}
+
+{% if r.actions %}
+<h2>Recommended improvements</h2>
+{% for a in r.actions %}<p class="li">- {{ a.action }}{% if a.reason %} <span class="muted">{{ a.reason }}</span>{% endif %}</p>{% endfor %}
+{% endif %}

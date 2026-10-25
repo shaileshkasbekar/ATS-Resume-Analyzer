@@ -1,160 +1,209 @@
 {% extends "base.html" %}
 
-{% from "_macros.html" import ring, meter %}
+{% from "_macros.html" import meter, level %}
+{% from "_chart.html" import chart, chart_script %}
 
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
 
 <div class="page-head">
-
     <div>
-        <span class="eyebrow">Your resume workspace</span>
-        <h1>Welcome back, {{ fullname }} 👋</h1>
-        <p>Analyze your resume, find skill gaps and improve your job readiness.</p>
+        <span class="eyebrow">Overview</span>
+        <h1>Welcome back, {{ fullname }}</h1>
+        <p>Check your resume, match it to jobs, and improve it step by step.</p>
     </div>
-
-    <a href="/upload" class="btn btn-primary">
-        <i class="fa-solid fa-plus"></i>
-        Analyze resume
-    </a>
-
 </div>
 
 
-<!-- ================= QUICK ACTIONS ================= -->
+<!-- ================= MAIN ACTIONS ================= -->
 
 <div class="grid grid-3">
 
-    <a href="/upload" class="card action-card featured">
-        <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
-        <h2>ATS analysis for a job role</h2>
-        <p>
-            Pick a role and get an ATS score, matched and missing skills,
-            and AI recommendations.
-        </p>
-        <span class="go">Start ATS analysis <i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-
-    <a href="/job-match" class="card action-card">
-        <div class="stat-icon tint-good"><i class="fa-solid fa-handshake"></i></div>
-        <h2>Match a real job posting</h2>
-        <p class="muted">
-            Paste a job description and see your match, missing skills
-            and keywords to add.
-        </p>
-        <span class="go">Match a job <i class="fa-solid fa-arrow-right"></i></span>
+    <a href="/job-match" class="card action-card featured">
+        <div class="stat-icon" aria-hidden="true"><i class="fa-solid fa-handshake"></i></div>
+        <h2>Match a job</h2>
+        <p>Compare your resume with a job description and see exactly what to fix.</p>
+        <span class="go">Start <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
     </a>
 
     <a href="/general-analyzer" class="card action-card">
-        <div class="stat-icon tint-info"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-        <h2>General resume check</h2>
-        <p class="muted">
-            Check structure, sections, contact details, clarity
-            and overall quality.
-        </p>
-        <span class="go">Open analyzer <i class="fa-solid fa-arrow-right"></i></span>
+        <div class="stat-icon tint-info" aria-hidden="true"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+        <h2>Analyze resume</h2>
+        <p class="muted">Check structure, writing quality and possible ATS reading problems.</p>
+        <span class="go">Check quality <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+    </a>
+
+    <a href="{{ ('/assistant/' ~ latest_jd.jd_result_id) if latest_jd else '/pick/assistant' }}" class="card action-card">
+        <div class="stat-icon tint-good" aria-hidden="true"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h2>Improve resume</h2>
+        <p class="muted">{% if latest_jd %}Rewrite suggestions for {{ latest_jd.job_title or "your latest job match" }}.{% else %}Needs a job match first.{% endif %}</p>
+        <span class="go">Improve <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
     </a>
 
 </div>
 
 
-<!-- ================= ATS STATS ================= -->
+{% if total_resumes == 0 %}
+
+<!-- ================= ONBOARDING ================= -->
+
+<div class="card" style="margin-top: 24px;">
+    <div class="card-head"><h2><i class="fa-solid fa-rocket" aria-hidden="true"></i> How to get started</h2></div>
+    <p class="muted">Four steps from your current resume to an application-ready one.</p>
+    <ol class="onboarding">
+        <li><strong>Upload your resume</strong>A text-based PDF, up to 5 MB.</li>
+        <li><strong>Add a job</strong>Paste a job description, or pick a role if you don't have one.</li>
+        <li><strong>Read your result</strong>See what matches, what's missing, and why — with evidence from your resume.</li>
+        <li><strong>Improve and prepare</strong>Accept rewrite suggestions, build a tailored resume, plan learning, practise interviews.</li>
+    </ol>
+    <div class="actions" style="margin-top: 18px;">
+        <a href="/job-match" class="btn btn-primary"><i class="fa-solid fa-handshake" aria-hidden="true"></i> Match my first job</a>
+        <a href="/general-analyzer" class="btn btn-ghost">Or just check my resume</a>
+    </div>
+</div>
+
+{% else %}
+
+<!-- ================= CONTINUE ================= -->
+
+{% if continue_step %}
+<div class="card continue-card" style="margin-top: 18px;">
+    <div class="stat-icon tint-primary" aria-hidden="true"><i class="fa-solid fa-forward"></i></div>
+    <div class="grow">
+        <p class="section-label" style="margin-bottom: 4px;">Continue where you left off</p>
+        <strong>{{ continue_step.text }}</strong>
+    </div>
+    <div class="actions">
+        <a href="{{ continue_step.url }}" class="btn btn-primary">{{ continue_step.label }}</a>
+        <a href="/action-center" class="btn btn-ghost">All next steps</a>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- ================= KEY NUMBERS ================= -->
 
 <div class="section-title">
-    <h2>ATS performance</h2>
-    <p>How your resumes score against job roles</p>
+    <h2>Your numbers</h2>
+    <p>From all your saved analyses</p>
 </div>
 
 <div class="grid grid-4">
 
     <div class="card stat">
-        <div class="stat-top">
-            Resumes uploaded
-            <div class="stat-icon tint-primary"><i class="fa-solid fa-file-lines"></i></div>
-        </div>
+        <div class="stat-top">Resumes analyzed <div class="stat-icon tint-primary" aria-hidden="true"><i class="fa-solid fa-file-lines"></i></div></div>
         <div class="stat-value">{{ total_resumes }}</div>
+        <span class="muted small">{{ total_versions }} saved version{{ "" if total_versions == 1 else "s" }}</span>
     </div>
 
     <div class="card stat">
-        <div class="stat-top">
-            ATS analyses
-            <div class="stat-icon tint-info"><i class="fa-solid fa-chart-line"></i></div>
-        </div>
-        <div class="stat-value">{{ total_ats }}</div>
+        <div class="stat-top">Jobs analyzed <div class="stat-icon tint-info" aria-hidden="true"><i class="fa-solid fa-handshake"></i></div></div>
+        <div class="stat-value">{{ total_jd }}</div>
+        <span class="muted small">{% if total_jd %}average match {{ "%.0f"|format(average_jd) }}%{% else %}<a href="/job-match">match your first job</a>{% endif %}</span>
     </div>
 
     <div class="card stat">
-        <div class="stat-top">
-            Average ATS score
-            <div class="stat-icon tint-good"><i class="fa-solid fa-gauge-high"></i></div>
-        </div>
-        <div class="stat-value">{{ "%.1f"|format(average_ats|float) }}%</div>
-        {{ meter("", average_ats) }}
+        <div class="stat-top">Best job match <div class="stat-icon tint-good" aria-hidden="true"><i class="fa-solid fa-trophy"></i></div></div>
+        <div class="stat-value">{% if total_jd %}{{ "%.0f"|format(highest_jd) }}%{% else %}—{% endif %}</div>
+        {% if total_jd %}{{ meter("", highest_jd) }}{% else %}<span class="muted small">No job matches yet</span>{% endif %}
     </div>
 
     <div class="card stat">
-        <div class="stat-top">
-            Best ATS score
-            <div class="stat-icon tint-ok"><i class="fa-solid fa-trophy"></i></div>
-        </div>
-        <div class="stat-value">{{ "%.1f"|format(highest_ats|float) }}%</div>
+        <div class="stat-top">Resume quality <div class="stat-icon tint-ok" aria-hidden="true"><i class="fa-solid fa-star"></i></div></div>
+        <div class="stat-value">{% if total_general %}{{ "%.0f"|format(average_general) }}%{% else %}—{% endif %}</div>
+        <span class="muted small">{% if total_general %}average · best {{ "%.0f"|format(highest_general) }}%{% else %}<a href="/general-analyzer">run a quality check</a>{% endif %}</span>
     </div>
 
 </div>
 
 
-<!-- ================= GENERAL STATS ================= -->
+<!-- ================= TRENDS ================= -->
 
-<div class="section-title">
-    <h2>General resume quality</h2>
-    <p>Overall quality from the general analyzer</p>
-</div>
+<div class="grid grid-2" style="margin-top: 18px;">
 
-<div class="grid grid-3">
-
-    <div class="card stat">
-        <div class="stat-top">
-            General analyses
-            <div class="stat-icon tint-info"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-        </div>
-        <div class="stat-value">{{ total_general }}</div>
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Job match score history</h2></div>
+        {% if jd_chart.labels|length >= 2 %}
+        {{ chart("jd-history", "line", jd_chart, "Job match scores over time") }}
+        {% elif jd_chart.labels|length == 1 %}
+        <p class="empty">One job match so far ({{ jd_chart.datasets[0].data[0] }}%). Run another — for example after improving your resume — to see a trend.</p>
+        {% else %}
+        <p class="empty">Your job match scores will appear here over time.</p>
+        {% endif %}
     </div>
 
-    <div class="card stat">
-        <div class="stat-top">
-            Average quality
-            <div class="stat-icon tint-good"><i class="fa-solid fa-chart-simple"></i></div>
-        </div>
-        <div class="stat-value">{{ "%.1f"|format(average_general|float) }}%</div>
-        {{ meter("", average_general) }}
-    </div>
-
-    <div class="card stat">
-        <div class="stat-top">
-            Best quality score
-            <div class="stat-icon tint-ok"><i class="fa-solid fa-star"></i></div>
-        </div>
-        <div class="stat-value">{{ "%.1f"|format(highest_general|float) }}%</div>
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Most frequently missing skills</h2></div>
+        {% if missing_chart.labels %}
+        {{ chart("missing-skills", "bar", missing_chart, "Skills most often missing from your resume") }}
+        <p class="muted small" style="margin-top: 8px;">Counted across your job matches and role checks. Skills at the top are worth learning first.</p>
+        {% else %}
+        <p class="empty">No missing skills recorded yet.</p>
+        {% endif %}
     </div>
 
 </div>
 
 
-<!-- ================= TIPS ================= -->
+<!-- ================= RECENT + WORKSPACE ================= -->
 
-<div class="section-title">
-    <h2>Quick tips</h2>
-    <p>Small changes that raise your score</p>
+<div class="grid grid-3" style="margin-top: 18px;">
+
+    <div class="card span-2">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent analyses</h2>
+            <a href="/history" class="small">All history</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Analysis</th><th class="hide-sm">Type</th><th>Score</th><th class="hide-sm">Date</th></tr></thead>
+                <tbody>
+                    {% for r in recent %}
+                    <tr>
+                        <td><a href="/history/{{ r.kind }}/{{ r.id }}"><strong>{{ r.title }}</strong></a><div class="muted small show-sm">{{ r.type }}</div></td>
+                        <td class="hide-sm"><span class="badge tint-primary">{{ r.type }}</span></td>
+                        <td><span class="badge tint-{{ level(r.score) }}">{{ "%.0f"|format((r.score or 0)|float) }}%</span></td>
+                        <td class="muted small hide-sm" style="white-space: nowrap;">{{ r.date.strftime("%d %b %Y") if r.date else "" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="stack">
+
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Learning</h2><a href="/roadmap" class="small">Roadmap</a></div>
+            {% if roadmap_total %}
+            <div class="stat-value">{{ roadmap_done }} / {{ roadmap_total }}</div>
+            {{ meter("tasks done", roadmap_done / roadmap_total * 100) }}
+            {% else %}
+            <p class="empty">Create a roadmap from a job match result to track the skills you're learning.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-bookmark" aria-hidden="true"></i> Saved jobs</h2><a href="/jobs" class="small">Manage</a></div>
+            {% if saved_jobs %}
+            <ul class="list">
+                {% for j in saved_jobs %}
+                <li><i class="fa-regular fa-bookmark" style="color: var(--primary);" aria-hidden="true"></i>
+                    <span><a href="/job-match?job={{ j.job_id }}">{{ j.title or "Untitled job" }}</a>{% if j.company %} <span class="muted small">· {{ j.company }}</span>{% endif %}</span></li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty">Save job descriptions to reuse and compare them.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
 </div>
 
-<div class="card">
-    <ul class="list list-tip">
-        <li><i class="fa-solid fa-lightbulb"></i><span>Use the exact skill names from the job posting, e.g. "React" and "REST APIs".</span></li>
-        <li><i class="fa-solid fa-lightbulb"></i><span>Start each bullet with an action verb and add a number: "Reduced load time by 40%".</span></li>
-        <li><i class="fa-solid fa-lightbulb"></i><span>Keep a simple one-column layout. Tables, columns and icons confuse many ATS systems.</span></li>
-        <li><i class="fa-solid fa-lightbulb"></i><span>Add LinkedIn and GitHub links, and list the tech stack under each project.</span></li>
-    </ul>
-</div>
+{% endif %}
 
 {% endblock %}
+
+{% block scripts %}{% if jd_chart.labels|length >= 2 or missing_chart.labels %}{{ chart_script() }}{% endif %}{% endblock %}

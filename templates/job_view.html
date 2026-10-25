@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% from "_macros.html" import chips, icon_list %}
+
+{% block title %}{{ job.title or "Saved job" }}{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Saved job</span>
+        <h1>{{ job.title or "Untitled job" }}{% if job.company %}<span class="muted" style="font-weight: 500;"> · {{ job.company }}</span>{% endif %}</h1>
+    </div>
+    <div class="actions">
+        <a href="/jobs/{{ job.job_id }}/edit" class="btn btn-ghost"><i class="fa-solid fa-pen"></i> Edit</a>
+        <a href="/job-match?job={{ job.job_id }}" class="btn btn-primary"><i class="fa-solid fa-handshake"></i> Analyze a resume</a>
+    </div>
+</div>
+
+<div class="stack">
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-circle-exclamation"></i> Required skills</h2></div>
+            {{ chips((req.mandatory_skills or [])|map(attribute="name")|list, "primary", "", "None found") }}
+        </div>
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-star"></i> Preferred skills</h2></div>
+            {{ chips((req.preferred_skills or [])|map(attribute="name")|list, "", "", "None found") }}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-list-check"></i> Other requirements</h2></div>
+        <ul class="list list-tip">
+            <li><i class="fa-solid fa-briefcase"></i><span>Experience:
+                {% set years = (req.experience or {}).get("min_years") %}
+                {% if years is none %}not stated{% elif years == 0 %}entry level{% else %}{{ "%g"|format(years) }}+ years{% endif %}</span></li>
+            {% for e in req.education or [] %}<li><i class="fa-solid fa-graduation-cap"></i><span>{{ e }}</span></li>{% endfor %}
+            {% for cert in req.certifications_required or [] %}<li><i class="fa-solid fa-certificate"></i><span>{{ cert }}</span></li>{% endfor %}
+        </ul>
+        {% if req.responsibilities %}
+        <p class="muted small" style="margin: 14px 0 8px;">Responsibilities</p>
+        {{ icon_list(req.responsibilities, "tip", "fa-angle-right") }}
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-file-lines"></i> Job description</h2></div>
+        <div class="quote-box">{{ job.description }}</div>
+    </div>
+
+</div>
+
+{% endblock %}

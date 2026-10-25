@@ -1,0 +1,51 @@
+{# One improvement suggestion: original, proposed text (editable), reason,
+   requirement, evidence; Edit / Accept / Reject / Undo. Needs `s` and `kind_labels`. #}
+
+<div class="card suggestion" data-suggestion="{{ s.suggestion_id }}" data-status="{{ s.status }}">
+
+    <div class="card-head">
+        <h3 class="chips" style="margin: 0;">
+            <span class="badge tint-primary">{{ kind_labels.get(s.kind, s.kind) }}</span>
+            {% if s.requirement %}<span class="badge tint-info">For: {{ s.requirement }}</span>{% endif %}
+            {% if s.needs_metric %}<span class="badge tint-ok"><i class="fa-solid fa-hashtag" aria-hidden="true"></i> Add a real number</span>{% endif %}
+        </h3>
+        <span class="badge status-badge" data-status-badge></span>
+    </div>
+
+    <div class="grid grid-2">
+
+        <div>
+            <p class="section-label">{{ "Original" if s.kind != "advice" else "Related text in your resume" }}</p>
+            {% if s.original %}
+            <div class="quote-box">{{ s.original }}</div>
+            {% else %}
+            <div class="quote-box muted">{{ "(No summary in your resume yet)" if s.kind == "summary" else "(Nothing yet)" }}</div>
+            {% endif %}
+        </div>
+
+        <div>
+            {% if s.kind == "advice" %}
+            <p class="section-label">What to do</p>
+            <div class="quote-box improved">{{ s.improved }}</div>
+            {% else %}
+            <label class="section-label" for="improved-{{ s.suggestion_id }}">Proposed text</label>
+            <textarea class="input improved-input" id="improved-{{ s.suggestion_id }}" rows="4" maxlength="1000" data-improved>{{ s.improved }}</textarea>
+            {% endif %}
+        </div>
+
+    </div>
+
+    {% if s.reason %}<p style="margin-top: 12px;"><strong>Why:</strong> {{ s.reason }}</p>{% endif %}
+    {% if s.evidence and s.evidence != s.original %}<p class="muted small" style="margin-top: 6px;"><strong>Based on your resume:</strong> <q>{{ s.evidence }}</q></p>{% endif %}
+
+    <div class="actions" style="margin-top: 14px;">
+        {% if s.kind != "advice" %}
+        <button type="button" class="btn btn-ghost btn-sm" data-edit-suggestion><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>
+        {% endif %}
+        <button type="button" class="btn btn-primary btn-sm" data-set-status="accepted"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ "Accept" if s.kind != "advice" else "Got it" }}</button>
+        <button type="button" class="btn btn-danger btn-sm" data-set-status="rejected"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Reject</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-set-status="pending"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo</button>
+        <span class="muted small" data-message role="status"></span>
+    </div>
+
+</div>

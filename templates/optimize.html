@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% from "_journey.html" import journey %}
+
+{% macro delta(value) -%}
+{% if value > 0 %}<span class="delta-up">+{{ value }}</span>{% elif value < 0 %}<span class="delta-down">{{ value }}</span>{% else %}<span class="muted">0</span>{% endif %}
+{%- endmacro %}
+
+{% block title %}Resume Builder{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+
+    <div>
+        <span class="eyebrow">Resume builder</span>
+        <h1>Tailored resume for {{ row.job_title or "this job" }}</h1>
+        <p>Your resume plus the {{ doc.applied_count }} change{{ "" if doc.applied_count == 1 else "s" }} you accepted. Your original file is never changed.</p>
+    </div>
+
+    <div class="actions">
+        <a href="/optimize/{{ row.jd_result_id }}/download?template={{ doc.template }}" class="btn btn-primary">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> Download PDF
+        </a>
+    </div>
+
+</div>
+
+{{ journey(row.jd_result_id, "build") }}
+
+{% if accepted_count == 0 %}
+<div class="flash flash-warning" style="margin-bottom: 18px;">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    <span>You haven't accepted any suggestions yet, so this is your current resume in a clean layout.
+        <a href="/assistant/{{ row.jd_result_id }}">Review suggestions</a> to tailor it.</span>
+</div>
+{% endif %}
+
+<div class="optimize-layout">
+
+    <aside class="stack">
+
+        <!-- Template picker -->
+
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-palette" aria-hidden="true"></i> 1. Choose a template</h2></div>
+            <div class="grid grid-2" style="gap: 10px;">
+                {% for key, t in templates.items() %}
+                <a href="?template={{ key }}" class="template-option {% if key == doc.template %}active{% endif %}"
+                   {% if key == doc.template %}aria-current="true"{% endif %}>
+                    <div class="template-thumb thumb-{{ key }}" aria-hidden="true">
+                        <i class="t-name"></i><i class="t-head"></i><i></i><i style="width: 80%;"></i><i class="t-head"></i><i style="width: 70%;"></i>
+                    </div>
+                    <strong>{{ t.label }}{% if key == doc.template %} <i class="fa-solid fa-check" style="color: var(--primary);" aria-label="selected"></i>{% endif %}</strong>
+                    <span class="muted small">{{ t.description }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Progress -->
+
+        {% if progress %}
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> Effect of your changes</h2></div>
+            <p class="stat-value" style="font-size: 24px;">{{ "%.0f"|format(progress.a) }} → {{ "%.0f"|format(progress.b) }} <span class="small">{{ delta(progress.delta) }} pts</span></p>
+            {% if progress.changes %}
+            <ul class="list list-tip" style="margin-top: 10px;">
+                {% for ch in progress.changes[:4] %}
+                <li><i class="fa-solid fa-arrow-right" aria-hidden="true"></i><span><strong>{{ ch.requirement }}</strong>: {{ ch.before }} → {{ ch.after }} ({{ delta(ch.points) }})</span></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            <p class="field-hint" style="margin-top: 10px;">Same job requirements and the same rule-based scoring for both, so the change comes only from your accepted edits. Wording-only edits may not change the score.</p>
+        </div>
+        {% endif %}
+
+        <!-- Save / download -->
+
+        <div class="card">
+            <div class="card-head"><h2><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> 2. Save or download</h2></div>
+            <a href="/optimize/{{ row.jd_result_id }}/download?template={{ doc.template }}" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-download" aria-hidden="true"></i> Download PDF
+            </a>
+            {% if can_save_version %}
+            <form method="POST" action="/optimize/{{ row.jd_result_id }}/save" style="margin-top: 10px;">
+                {{ csrf_field() }}
+                <input type="hidden" name="template" value="{{ doc.template }}">
+                <button type="submit" class="btn btn-ghost btn-block"><i class="fa-solid fa-code-branch" aria-hidden="true"></i> Save as new resume version</button>
+            </form>
+            <p class="field-hint" style="margin-top: 8px;">A saved version can be analyzed again and compared with your original.</p>
+            {% endif %}
+        </div>
+
+        {% if doc.not_applied %}
+        <div class="card">
+            <p class="small"><strong>{{ doc.not_applied|length }} accepted change(s) could not be placed automatically</strong> because the text was split differently in your PDF. Add them by hand:</p>
+            <ul class="list list-tip" style="margin-top: 10px;">
+                {% for s in doc.not_applied %}<li><i class="fa-solid fa-pen" aria-hidden="true"></i><span>{{ s.improved }}</span></li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <p class="disclaimer">ATS-friendly: one column, standard headings, real selectable text. Check every line before sending — especially any <strong>[add real number]</strong> placeholders.</p>
+
+    </aside>
+
+    <section aria-label="Resume preview">
+        <p class="section-label">Preview · {{ templates[doc.template].label }} template</p>
+        <div class="paper">
+            <style>{{ doc.css }}</style>
+            {% include "resume_doc.html" %}
+        </div>
+    </section>
+
+</div>
+
+{% endblock %}

@@ -17,6 +17,7 @@
     </div>
 
     <div class="actions">
+        {% if report_url %}<a href="{{ report_url }}" class="btn btn-ghost"><i class="fa-solid fa-download"></i> Report</a>{% endif %}
         <a href="/history" class="btn btn-ghost">
             <i class="fa-solid fa-clock-rotate-left"></i> History
         </a>
@@ -38,7 +39,13 @@
 
         <div class="hero-body">
             <h2>{{ verdict(result.score) }}</h2>
-            <p>Your score combines basic resume checks with an AI quality review.</p>
+            <p>
+                Your score combines basic resume checks with an AI quality review.
+                {% if result.experience_level %}
+                <br>Checked as: <span class="badge tint-primary">{{ result.experience_level|capitalize }}</span>
+                {% if result.experience_level == "fresher" %}<span class="muted small">— not penalized for missing work experience</span>{% endif %}
+                {% endif %}
+            </p>
 
             {% if result.rule_score is defined %}
             {{ meter("Basic checks (rule-based)", result.rule_score) }}
@@ -49,48 +56,105 @@
     </div>
 
 
-    <!-- ================= AI BREAKDOWN ================= -->
+    <!-- ================= FIX THESE FIRST ================= -->
 
+    {% set confirmed = (result.issues or {}).get("confirmed", []) if result.issues is defined else [] %}
+    {% set top = (confirmed|map(attribute="text")|list + result.recommendations)[:3] %}
+    {% if top %}
+    <section aria-labelledby="fix-title">
+        <h2 id="fix-title" class="section-title" style="margin-top: 6px;">Fix these first</h2>
+        <div class="grid grid-3">
+            {% for item in top %}
+            <div class="priority {% if loop.index <= confirmed|length %}high{% endif %}">
+                <span class="section-label" style="margin: 0;">{{ loop.index }} · {{ confirmed[loop.index0].category if loop.index <= confirmed|length else "Recommendation" }}</span>
+                <strong>{{ item }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-head"><h2><i class="fa-solid fa-forward" aria-hidden="true"></i> Improve it with</h2></div>
+        <div class="grid grid-3">
+            <a href="/job-match" class="group action-card">
+                <h3><i class="fa-solid fa-handshake" style="color: var(--primary);" aria-hidden="true"></i> Match to a job</h3>
+                <p class="muted small">See which skills a real job wants and how your resume compares.</p>
+            </a>
+            <a href="/pick/assistant" class="group action-card">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);" aria-hidden="true"></i> Rewrite suggestions</h3>
+                <p class="muted small">Improve bullets and summary for one of your job matches.</p>
+            </a>
+            <a href="/resumes" class="group action-card">
+                <h3><i class="fa-solid fa-code-branch" style="color: var(--primary);" aria-hidden="true"></i> Save versions</h3>
+                <p class="muted small">Upload your edited resume as a new version and compare.</p>
+            </a>
+        </div>
+    </div>
+
+
+    <!-- ================= ISSUES ================= -->
+
+    {% if result.issues and (result.issues.confirmed or result.issues.potential) %}
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-circle-exclamation"></i> Confirmed issues</h2>
+                <span class="badge tint-low">{{ result.issues.confirmed|length }}</span>
+            </div>
+            {% if result.issues.confirmed %}
+            <ul class="list list-low">
+                {% for i in result.issues.confirmed %}<li><i class="fa-solid fa-circle-exclamation"></i><span><strong>{{ i.category }}:</strong> {{ i.text }}</span></li>{% endfor %}
+            </ul>
+            {% else %}<p class="empty">None found.</p>{% endif %}
+        </div>
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-circle-question"></i> Potential issues</h2>
+                <span class="badge tint-ok">{{ result.issues.potential|length }}</span>
+            </div>
+            {% if result.issues.potential %}
+            <ul class="list list-tip">
+                {% for i in result.issues.potential %}<li><i class="fa-solid fa-circle-question"></i><span><strong>{{ i.category }}:</strong> {{ i.text }}</span></li>{% endfor %}
+            </ul>
+            {% else %}<p class="empty">None found.</p>{% endif %}
+            <p class="muted small" style="margin-top: 10px;">Potential issues may or may not be a problem — check them yourself.</p>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- ================= WRITING QUALITY ================= -->
+
+    {% if result.content is defined %}
     <div class="card">
 
         <div class="card-head">
-            <h2><i class="fa-solid fa-brain"></i> AI quality breakdown</h2>
+            <h2><i class="fa-solid fa-pen-nib"></i> Writing quality</h2>
         </div>
 
-        <div class="grid grid-2">
-            <div>
-                {{ meter("Summary", result.summary_quality) }}
-                {{ meter("Experience", result.experience_quality) }}
-                {{ meter("Projects", result.project_quality) }}
-            </div>
-            <div>
-                {{ meter("Skills", result.skills_quality) }}
-                {{ meter("Clarity", result.clarity_quality) }}
-            </div>
-        </div>
+        <ul class="list check-list">
+            {{ check(result.content.quantified >= 3,
+                     "Shows impact with numbers (" ~ result.content.quantified ~ " found)",
+                     "Few numbers showing impact (" ~ result.content.quantified ~ " found) — add results like \"40% faster\"") }}
+            {{ check(result.content.action_verbs|length >= 5,
+                     "Uses strong action verbs (" ~ result.content.action_verbs|length ~ " different)",
+                     "Few bullets start with action verbs (" ~ result.content.action_verbs|length ~ " found)") }}
+            {{ check(not result.content.weak_phrases,
+                     "No weak phrases like \"responsible for\"",
+                     "Weak phrases found: " ~ result.content.weak_phrases|join(", ")) }}
+            {{ check(result.content.pronouns <= 2,
+                     "No personal pronouns",
+                     "Uses \"I / me / my\" " ~ result.content.pronouns ~ " times") }}
+        </ul>
+
+        {% if result.content.action_verbs %}
+        <p class="muted small" style="margin: 16px 0 8px;">Action verbs you used:</p>
+        {{ chips(result.content.action_verbs|map("capitalize")|list, "good") }}
+        {% endif %}
 
     </div>
-
-
-    <!-- ================= STRENGTHS / WEAKNESSES ================= -->
-
-    <div class="grid grid-2">
-
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-thumbs-up"></i> Strengths</h2>
-            </div>
-            {{ icon_list(result.ai_strengths, "good", "fa-circle-check", "No specific strengths detected.") }}
-        </div>
-
-        <div class="card">
-            <div class="card-head">
-                <h2><i class="fa-solid fa-triangle-exclamation"></i> Weaknesses</h2>
-            </div>
-            {{ icon_list(result.ai_weaknesses, "low", "fa-circle-exclamation", "No major weaknesses detected.") }}
-        </div>
-
-    </div>
+    {% endif %}
 
 
     <!-- ================= CHECKLIST ================= -->
@@ -138,37 +202,50 @@
     </div>
 
 
-    <!-- ================= WRITING QUALITY ================= -->
+    <!-- ================= STRENGTHS / WEAKNESSES ================= -->
 
-    {% if result.content is defined %}
+    <div class="grid grid-2">
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-thumbs-up"></i> Strengths</h2>
+            </div>
+            {{ icon_list(result.ai_strengths, "good", "fa-circle-check", "No specific strengths detected.") }}
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> Weaknesses</h2>
+            </div>
+            {{ icon_list(result.ai_weaknesses, "low", "fa-circle-exclamation", "No major weaknesses detected.") }}
+        </div>
+
+    </div>
+
+
+    <!-- ================= AI BREAKDOWN ================= -->
+
     <div class="card">
 
         <div class="card-head">
-            <h2><i class="fa-solid fa-pen-nib"></i> Writing quality</h2>
+            <h2><i class="fa-solid fa-brain"></i> AI quality breakdown</h2>
         </div>
 
-        <ul class="list check-list">
-            {{ check(result.content.quantified >= 3,
-                     "Shows impact with numbers (" ~ result.content.quantified ~ " found)",
-                     "Few numbers showing impact (" ~ result.content.quantified ~ " found) — add results like \"40% faster\"") }}
-            {{ check(result.content.action_verbs|length >= 5,
-                     "Uses strong action verbs (" ~ result.content.action_verbs|length ~ " different)",
-                     "Few bullets start with action verbs (" ~ result.content.action_verbs|length ~ " found)") }}
-            {{ check(not result.content.weak_phrases,
-                     "No weak phrases like \"responsible for\"",
-                     "Weak phrases found: " ~ result.content.weak_phrases|join(", ")) }}
-            {{ check(result.content.pronouns <= 2,
-                     "No personal pronouns",
-                     "Uses \"I / me / my\" " ~ result.content.pronouns ~ " times") }}
-        </ul>
+        <p class="muted small" style="margin-bottom: 14px;">The AI rates each part from 0 to 100 for clarity, impact and relevance. Its overall rating is half of your score; the basic checks are the other half.</p>
 
-        {% if result.content.action_verbs %}
-        <p class="muted small" style="margin: 16px 0 8px;">Action verbs you used:</p>
-        {{ chips(result.content.action_verbs|map("capitalize")|list, "good") }}
-        {% endif %}
+        <div class="grid grid-2">
+            <div>
+                {{ meter("Summary", result.summary_quality) }}
+                {{ meter("Experience", result.experience_quality) }}
+                {{ meter("Projects", result.project_quality) }}
+            </div>
+            <div>
+                {{ meter("Skills", result.skills_quality) }}
+                {{ meter("Clarity", result.clarity_quality) }}
+            </div>
+        </div>
 
     </div>
-    {% endif %}
 
 
     <!-- ================= SKILLS ================= -->

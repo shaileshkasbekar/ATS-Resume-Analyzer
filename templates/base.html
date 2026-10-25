@@ -5,6 +5,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{% block title %}ATS Resume Analyzer{% endblock %} | ATS Analyzer</title>
 
@@ -19,9 +20,14 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/app.css') }}">
 
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/components.css') }}">
+
 </head>
 
 <body>
+
+<a href="#main-content" class="skip-link">Skip to content</a>
 
 {% block body %}
 
@@ -29,7 +35,7 @@
 
     <!-- ================= SIDEBAR ================= -->
 
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
 
         <a href="/dashboard" class="brand">
             <div class="brand-icon">
@@ -41,37 +47,40 @@
             </div>
         </a>
 
-        <nav class="nav">
+        <nav class="nav" id="main-nav" aria-label="Main">
 
-            <a href="/dashboard"
-               class="{% if request.path == '/dashboard' %}active{% endif %}">
-                <i class="fa-solid fa-chart-pie"></i>
-                Dashboard
-            </a>
+            {% set p = request.path %}
 
-            <a href="/upload"
-               class="{% if request.path == '/upload' or request.path.startswith('/history/ats') %}active{% endif %}">
-                <i class="fa-solid fa-bullseye"></i>
-                ATS Analysis
+            {% macro nav_link(url, icon, label, active) -%}
+            <a href="{{ url }}" class="{% if active %}active{% endif %}" {% if active %}aria-current="page"{% endif %}>
+                <i class="fa-solid {{ icon }}" aria-hidden="true"></i> {{ label }}
             </a>
+            {%- endmacro %}
 
-            <a href="/job-match"
-               class="{% if request.path == '/job-match' or request.path.startswith('/history/jd') %}active{% endif %}">
-                <i class="fa-solid fa-handshake"></i>
-                Job Match
-            </a>
+            <span class="nav-label">Dashboard</span>
+            {{ nav_link("/dashboard", "fa-chart-pie", "Overview", p == "/dashboard") }}
+            {{ nav_link("/action-center", "fa-list-check", "Action Center", p == "/action-center") }}
 
-            <a href="/general-analyzer"
-               class="{% if request.path == '/general-analyzer' or request.path.startswith('/history/general') %}active{% endif %}">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                General Analyzer
-            </a>
+            <span class="nav-label">Resume Tools</span>
+            {{ nav_link("/job-match", "fa-handshake", "Job Match", p == "/job-match" or p.startswith("/history/jd")) }}
+            {{ nav_link("/general-analyzer", "fa-magnifying-glass-chart", "Resume Quality", p == "/general-analyzer" or p.startswith("/history/general")) }}
+            {{ nav_link("/pick/assistant", "fa-wand-magic-sparkles", "Resume Improvement", p == "/pick/assistant" or p.startswith("/assistant")) }}
+            {{ nav_link("/pick/optimize", "fa-file-pen", "Resume Builder", p == "/pick/optimize" or p.startswith("/optimize")) }}
+            {{ nav_link("/upload", "fa-bullseye", "ATS Role Check", p == "/upload" or p.startswith("/history/ats")) }}
 
-            <a href="/history"
-               class="{% if request.path == '/history' %}active{% endif %}">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                History
-            </a>
+            <span class="nav-label">Career Tools</span>
+            {{ nav_link("/roadmap", "fa-graduation-cap", "Learning Roadmap", p.startswith("/roadmap")) }}
+            {{ nav_link("/pick/projects", "fa-lightbulb", "Project Ideas", p == "/pick/projects" or p.startswith("/projects")) }}
+            {{ nav_link("/pick/interview", "fa-comments", "Mock Interview", p == "/pick/interview" or p.startswith("/interview")) }}
+
+            <span class="nav-label">My Workspace</span>
+            {{ nav_link("/resumes", "fa-code-branch", "Resume Versions", p.startswith("/resumes")) }}
+            {{ nav_link("/jobs", "fa-bookmark", "Saved Jobs", p.startswith("/jobs")) }}
+            {{ nav_link("/jobs#compare", "fa-table-columns", "Job Comparison", false) }}
+            {{ nav_link("/history", "fa-clock-rotate-left", "History", p == "/history") }}
+
+            <span class="nav-label">Settings</span>
+            {{ nav_link("/settings", "fa-gear", "Profile & Password", p.startswith("/settings")) }}
 
         </nav>
 
@@ -96,7 +105,7 @@
 
     </aside>
 
-    <div class="backdrop" data-menu-toggle></div>
+    <div class="backdrop" data-menu-toggle aria-hidden="true"></div>
 
 
     <!-- ================= MAIN ================= -->
@@ -112,13 +121,13 @@
                 <strong>ATS Analyzer</strong>
             </a>
 
-            <button class="icon-btn" type="button" data-menu-toggle aria-label="Open menu">
+            <button class="icon-btn" type="button" data-menu-toggle aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
                 <i class="fa-solid fa-bars"></i>
             </button>
 
         </header>
 
-        <main class="content">
+        <main class="content" id="main-content" tabindex="-1">
 
             {% include "_flash.html" %}
 
@@ -145,6 +154,8 @@
         </p>
     </div>
 </div>
+
+{% block scripts %}{% endblock %}
 
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 

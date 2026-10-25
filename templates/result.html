@@ -17,6 +17,7 @@
     </div>
 
     <div class="actions">
+        {% if report_url %}<a href="{{ report_url }}" class="btn btn-ghost"><i class="fa-solid fa-download"></i> Report</a>{% endif %}
         <a href="/history" class="btn btn-ghost">
             <i class="fa-solid fa-clock-rotate-left"></i> History
         </a>

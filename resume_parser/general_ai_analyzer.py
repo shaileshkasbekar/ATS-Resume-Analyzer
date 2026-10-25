@@ -1,4 +1,4 @@
-from resume_parser.ai_client import ask_ai_for_json
+from resume_parser.ai_client import ask_ai_for_json, as_untrusted
 
 
 # =========================================
@@ -20,7 +20,7 @@ Evaluate the overall quality of the resume.
 
 RESUME:
 
-{resume_text}
+{as_untrusted("resume", resume_text)}
 
 
 Evaluate:

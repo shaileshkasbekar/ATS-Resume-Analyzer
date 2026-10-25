@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% from "_journey.html" import journey %}
+
+{% block title %}Improve Resume{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+
+    <div>
+        <span class="eyebrow">Resume improvement assistant</span>
+        <h1>Improve your resume for {{ row.job_title or "this job" }}</h1>
+        <p>Review each suggestion. Edit it if needed, then accept or reject it. Your original resume is never changed.</p>
+    </div>
+
+    <div class="actions">
+        <a href="/history/jd/{{ row.jd_result_id }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Job match</a>
+        <a href="/optimize/{{ row.jd_result_id }}" class="btn btn-primary"><i class="fa-solid fa-file-pen"></i> Build optimized resume</a>
+    </div>
+
+</div>
+
+{{ journey(row.jd_result_id, "improve") }}
+
+<div class="stack">
+
+    <div class="card">
+        <div class="card-head">
+            <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Suggestions</h2>
+            <div class="chips">
+                <span class="badge tint-good" data-count="accepted">{{ counts.accepted }} accepted</span>
+                <span class="badge tint-low" data-count="rejected">{{ counts.rejected }} rejected</span>
+                <span class="badge tint-info" data-count="pending">{{ counts.pending }} to review</span>
+            </div>
+        </div>
+
+        {% if resume_missing %}
+        <p class="empty">The resume file for this analysis is no longer available, so suggestions cannot be generated.</p>
+        {% else %}
+        <form method="POST" action="/assistant/{{ row.jd_result_id }}/generate" data-loading>
+            {{ csrf_field() }}
+            <button type="submit" class="btn {{ 'btn-ghost' if suggestions else 'btn-primary' }}">
+                <i class="fa-solid fa-rotate"></i>
+                {{ "Generate new suggestions" if suggestions else "Generate suggestions" }}
+            </button>
+            <span class="muted small" style="margin-left: 8px;">
+                {% if suggestions %}Suggestions you already accepted or rejected are kept.{% else %}Takes about 20 seconds.{% endif %}
+            </span>
+        </form>
+        {% endif %}
+
+        <p class="disclaimer" style="margin-top: 14px;">
+            Suggestions only reword what is already in your resume. Rewrites that add new skills
+            are blocked, and invented numbers are replaced with <strong>[add real number]</strong> —
+            please fill in your real result before accepting.
+        </p>
+    </div>
+
+    {% for s in suggestions %}
+    {% include "_suggestion_card.html" %}
+    {% endfor %}
+
+</div>
+
+{% endblock %}
