@@ -240,7 +240,9 @@ def dashboard_page():
         recent.append({"id": row["jd_result_id"], "title": row["job_title"] or "Job", "score": row["score"],
                        "date": row["created_at"], "kind": "jd", "type": "Job match"})
 
-    recent.sort(key=lambda r: r["date"] or 0, reverse=True)
+    # Records without a date go last (never compare a date with a number)
+
+    recent.sort(key=lambda r: (r["date"] is not None, r["date"] or ""), reverse=True)
 
     done, total = roadmap_progress(user_id)
 

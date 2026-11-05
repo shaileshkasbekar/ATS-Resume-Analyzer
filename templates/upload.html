@@ -1,21 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}ATS Analysis{% endblock %}
+{% block title %}ATS Role Check{% endblock %}
 
 {% block content %}
 
 <div class="page-head">
     <div>
-        <span class="eyebrow">ATS analysis</span>
+        <span class="eyebrow">ATS role check</span>
         <h1>Check your resume for a job role</h1>
-        <p>Choose the role you are applying for and upload your resume as a PDF.</p>
+        <p>No job description? Check against the typical skills of a role. For a real posting, use <a href="/job-match">Job Match</a>.</p>
     </div>
 </div>
 
 <div class="upload-layout">
 
-    <form method="POST" enctype="multipart/form-data" class="card" data-loading>
-{{ csrf_field() }}
+    <form method="POST" action="/job-match" enctype="multipart/form-data" class="card" data-loading>
+        {{ csrf_field() }}
+        <input type="hidden" name="mode" value="role">
 
         <div class="field">
             <label for="role_id">Job role</label>
@@ -28,36 +29,33 @@
         </div>
 
         <div class="field">
-            <label>Resume (PDF, max 5 MB)</label>
+            <label for="role-resume">Resume PDF</label>
             <div class="dropzone">
-                <input type="file" name="resume" accept=".pdf" required>
-                <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <input type="file" id="role-resume" name="resume" accept=".pdf" required aria-describedby="role-resume-help">
+                <div class="dropzone-icon" aria-hidden="true"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <strong>Drag and drop your resume here</strong>
-                <span class="muted small">or click to browse</span>
-                <span class="dropzone-file"></span>
+                <span class="btn btn-ghost btn-sm" aria-hidden="true">Browse files</span>
+                <span class="dropzone-file" aria-live="polite"></span>
             </div>
+            <span class="field-hint" id="role-resume-help">PDF only, up to 5 MB. Use a text-based PDF (scanned images cannot be read).</span>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa-solid fa-magnifying-glass-chart"></i>
-            Analyze resume
+            <i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>
+            Check my resume
         </button>
 
     </form>
 
     <aside class="card">
         <div class="card-head">
-            <h2><i class="fa-solid fa-circle-info"></i> What you get</h2>
+            <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> How it works</h2>
         </div>
         <ul class="list list-tip">
-            <li><i class="fa-solid fa-gauge-high"></i><span>An ATS score from rule-based matching combined with AI review</span></li>
-            <li><i class="fa-solid fa-layer-group"></i><span>A score for each skill group of the role</span></li>
-            <li><i class="fa-solid fa-circle-check"></i><span>Skills you match and important skills you are missing</span></li>
-            <li><i class="fa-solid fa-brain"></i><span>AI feedback on your experience and projects</span></li>
+            <li><i class="fa-solid fa-route" aria-hidden="true"></i><span>Roles have alternative paths (for example Python, Java or Node.js backend). Your strongest path is used, so you are not marked down for the others.</span></li>
+            <li><i class="fa-solid fa-calculator" aria-hidden="true"></i><span>Same engine and score as Job Match: every requirement shows the line in your resume that proves it.</span></li>
+            <li><i class="fa-solid fa-forward" aria-hidden="true"></i><span>Then improve your resume, build a tailored version, and plan your learning — just like a job match.</span></li>
         </ul>
-        <p class="muted small" style="margin-top: 16px;">
-            Use a text-based PDF. Scanned images cannot be read.
-        </p>
     </aside>
 
 </div>

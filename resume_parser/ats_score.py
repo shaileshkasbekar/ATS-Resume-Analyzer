@@ -1,7 +1,37 @@
+from resume_parser.skill_extractor import alternative_family
+
 # A skill only listed (not used in projects/experience)
 # earns this share of its weight
 
 LISTED_ONLY_CREDIT = 0.75
+
+
+def _satisfied_by(skill_name, group_name, resume_skills, group_skills):
+    """
+    The resume skill that satisfies this role skill: the skill itself, or
+    an alternative from the same family in the same group
+    (PostgreSQL satisfies MySQL). None if not satisfied.
+    """
+
+    key = skill_name.strip().lower()
+
+    if key in resume_skills:
+        return key
+
+    for other in sorted(alternative_family(key)):
+        if other != key and other in resume_skills and other in group_skills.get(group_name, set()):
+            return other
+
+    return None
+
+
+def _display_name(key, role_skill_groups):
+
+    for skill_data in role_skill_groups:
+        if skill_data["skill_name"].strip().lower() == key:
+            return skill_data["skill_name"]
+
+    return key
 
 
 def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
@@ -24,6 +54,11 @@ def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
     """
 
     skill_evidence = skill_evidence or {}
+
+    group_skills = {}
+
+    for skill_data in role_skill_groups:
+        group_skills.setdefault(skill_data["group_name"], set()).add(skill_data["skill_name"].strip().lower())
 
     # -----------------------------------------
     # Normalize resume skills
@@ -112,14 +147,13 @@ def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
         # Skill matching
         # -----------------------------------------
 
-        if (
-            skill_name.strip().lower()
-            in resume_skills
-        ):
+        satisfied = _satisfied_by(skill_name, group_name, resume_skills, group_skills)
+
+        if satisfied:
 
             # Full credit if used in projects / experience
 
-            if skill_evidence.get(skill_name.strip().lower()) == "listed":
+            if skill_evidence.get(satisfied) == "listed":
                 credit = weight * LISTED_ONLY_CREDIT
             else:
                 credit = weight
@@ -128,10 +162,13 @@ def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
                 "matched_weight"
             ] += credit
 
+            # "MySQL (via PostgreSQL)" when an alternative satisfied it
+
             group_results[group_name][
                 "matched_skills"
             ].append(
-                skill_name
+                skill_name if satisfied == skill_name.strip().lower()
+                else f"{skill_name} (via {_display_name(satisfied, role_skill_groups)})"
             )
 
 
@@ -528,8 +565,7 @@ def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
 
         if (
 
-            skill_name.strip().lower()
-            not in resume_skills
+            not _satisfied_by(skill_name, skill_data["group_name"], resume_skills, group_skills)
 
             and
 
@@ -582,8 +618,7 @@ def calculate_ats_score(resume_skills, role_skill_groups, skill_evidence=None):
 
             if (
 
-                skill_name.strip().lower()
-                not in resume_skills
+                not _satisfied_by(skill_name, skill_data["group_name"], resume_skills, group_skills)
 
                 and
 

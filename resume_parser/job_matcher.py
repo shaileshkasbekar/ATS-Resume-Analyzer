@@ -18,7 +18,6 @@ from datetime import date
 from resume_parser.ai_client import ask_ai_for_json, as_untrusted
 from resume_parser.ai_validation import (
     clean_text,
-    clean_text_list,
     clean_score,
     clean_dict_list,
     quote_in_text
@@ -35,7 +34,6 @@ from resume_parser.scoring_config import (
 from resume_parser.sections import split_sections
 from resume_parser.skill_extractor import (
     IMPLIED_BY,
-    skill_names,
     find_skill_span,
     _word_pattern
 )

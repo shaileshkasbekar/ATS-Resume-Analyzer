@@ -173,6 +173,25 @@ On macOS / Linux use `venv/bin/python` instead of `venv\Scripts\python.exe`.
 
 ---
 
+## Accuracy evaluation
+
+```
+venv\Scripts\python.exe -m evaluation.evaluate
+```
+
+Runs the Job Match engine (rule-based, no AI) on hand-labelled cases in `evaluation/cases.py`
+(aliases, look-alike names, "or" choices, preferred markers, listed-only skills) and reports
+requirement-extraction precision/recall, matched/missing accuracy and evidence accuracy.
+Current result: 100% on all measures for 8 cases / 40 requirements. The set is small and
+synthetic: it measures known traps, not accuracy on every real resume.
+
+## Consistent scores (AI answer cache)
+
+The same resume + the same job reuse the AI's earlier answer, so the score does not change
+between runs and re-analysis is instant. A changed resume or job is analysed fresh.
+"Generate new" features (suggestions, project ideas, interview questions) are never cached.
+Answers are stored in `cache/ai/` for 30 days; set `AI_CACHE=0` in `.env` to turn this off.
+
 ## Tests
 
 ```

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, flash
+from flask import Blueprint, render_template, request, session, flash
 from werkzeug.utils import secure_filename
 
 import os
@@ -11,7 +11,7 @@ from models.database import get_db_connection, table_columns
 from models import repository
 from security import login_required, rate_limit
 
-from resume_parser.pdf_reader import extract_text_from_pdf, extract_text_from_pdf_bytes
+from resume_parser.pdf_reader import extract_text_from_pdf, extract_text_from_pdf_bytes, extract_links_from_pdf
 from resume_parser.jd_analyzer import analyze_job_match, analyze_role_match, plan_skills
 from resume_parser.job_requirements import extract_requirements
 from resume_parser.job_matcher import run_job_match
@@ -229,7 +229,9 @@ def match_job():
         return _render_form(prefill)
 
 
-    mode = request.form.get("mode", "paste")
+    # A form without "mode" but with a role (ATS Role Check page) is role mode
+
+    mode = request.form.get("mode") or ("role" if request.form.get("role_id") else "paste")
 
     if mode not in MODES:
         return _back("Please choose how to provide the job.")
@@ -384,7 +386,7 @@ def match_job():
         keep_file=version_id is not None
     )
 
-    return render_job_match_result(result, filename, jd_result_id, resume_text=text)
+    return render_job_match_result(result, filename, jd_result_id, resume_text=text, resume_path=filepath)
 
 
 def save_job_match(user_id, filename, filepath, result, jd_text, mode, role_id,
@@ -512,7 +514,7 @@ def normalize_result(result):
     return result
 
 
-def render_job_match_result(result, filename, jd_result_id=None, resume_text="", analyzed_at=None):
+def render_job_match_result(result, filename, jd_result_id=None, resume_text="", analyzed_at=None, resume_path=None):
     """
     Shared by the new result and the saved one in history.
     Only re-arranges the saved result for display (see result_view.py).
@@ -547,7 +549,9 @@ def render_job_match_result(result, filename, jd_result_id=None, resume_text="",
 
     # Resume quality from the existing rule-based checker (no AI, no new scoring)
 
-    quality = analyze_resume(resume_text) if resume_text.strip() else None
+    links = extract_links_from_pdf(resume_path) if resume_path and os.path.exists(resume_path) else []
+
+    quality = analyze_resume(resume_text, links) if resume_text.strip() else None
 
     return render_template(
         "job_match_result.html",

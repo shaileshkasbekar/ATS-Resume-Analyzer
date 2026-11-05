@@ -15,8 +15,7 @@ import re
 from resume_parser.ai_client import ask_ai_for_json, as_untrusted
 from resume_parser.ai_validation import clean_text, clean_dict_list, quote_in_text
 from resume_parser.skill_extractor import extract_skills
-from resume_parser.sections import split_sections
-from resume_parser.general_analyzer import WEAK_PHRASES, ACTION_VERBS, BULLET_CHARS
+from resume_parser.general_analyzer import WEAK_PHRASES, BULLET_CHARS
 
 
 KINDS = ("summary", "experience", "project", "skills", "advice")
@@ -191,7 +190,8 @@ Return ONLY valid JSON:
 
     answer = ask_ai_for_json(
         "You are a careful resume editor. You improve wording without ever inventing facts. Return only valid JSON.",
-        prompt
+        prompt,
+        cache=False
     )
 
     return (answer or {}).get("suggestions") if answer else None

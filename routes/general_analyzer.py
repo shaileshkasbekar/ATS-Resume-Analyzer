@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, session, redirect, flash
 
-from resume_parser.pdf_reader import extract_text_from_pdf
+from resume_parser.pdf_reader import extract_text_from_pdf, extract_links_from_pdf
 from resume_parser.general_analyzer import analyze_resume
 from resume_parser.general_ai_analyzer import analyze_general_resume_with_ai
 from resume_parser.ai_client import get_score
@@ -131,8 +131,11 @@ def analyze():
         # RULE-BASED ANALYSIS
         # =========================================
 
+        # Links inside the PDF too (LinkedIn / GitHub shown as icons)
+
         result = analyze_resume(
-            text
+            text,
+            extract_links_from_pdf(filepath)
         )
 
 

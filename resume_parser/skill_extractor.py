@@ -117,6 +117,42 @@ def extract_skills(text, extra_skills=None):
         "Ruby on Rails",
         "Swift",
 
+        # DevOps / cloud tooling
+        "Terraform",
+        "Ansible",
+        "Prometheus",
+        "Grafana",
+        "Shell Scripting",
+        "Networking",
+
+        # Mobile
+        "Android SDK",
+        "Kotlin",
+        "Jetpack Compose",
+        "Coroutines",
+        "Flutter",
+        "Dart",
+        "SQLite",
+        "XML",
+
+        # Data science / ML tooling
+        "Keras",
+        "XGBoost",
+        "MLflow",
+        "Seaborn",
+        "Jupyter",
+
+        # Testing / QA
+        "Selenium",
+        "Cypress",
+        "Playwright",
+        "TestNG",
+        "Manual Testing",
+        "Test Cases",
+        "API Testing",
+        "Bug Tracking",
+        "SDLC",
+
         # Process
         "Agile",
         "Scrum",
@@ -156,6 +192,8 @@ def extract_skills(text, extra_skills=None):
 
 SKILL_ALIASES = {
     "JavaScript": ["JS", "ES6"],
+    "HTML": ["HTML5"],
+    "CSS": ["CSS3"],
     "TypeScript": ["TS"],
     "React": ["ReactJS", "React.js"],
     "Angular": ["AngularJS"],
@@ -396,3 +434,26 @@ def _contains_word(text, name):
     )
 
     return re.search(pattern, text) is not None
+
+# Skills that can replace each other in a generic role (a role check asks
+# for "a SQL database" or "a cloud", not one exact product). Used only
+# inside the same skill group of a predefined role.
+
+ALTERNATIVE_FAMILIES = [
+    {"mysql", "postgresql", "oracle", "sqlite", "sql server", "mariadb"},
+    {"aws", "azure", "google cloud"},
+]
+
+
+def alternative_family(skill):
+    """
+    The set of skills that can replace this one, or an empty set.
+    """
+
+    key = skill.strip().lower()
+
+    for family in ALTERNATIVE_FAMILIES:
+        if key in family:
+            return family
+
+    return set()

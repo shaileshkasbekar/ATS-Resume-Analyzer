@@ -88,7 +88,7 @@ def test_roadmap_required_first_without_ai():
 
 
 def test_roadmap_ai_output_validated(monkeypatch):
-    monkeypatch.setattr(career_module, "ask_ai_for_json", lambda s, p: {
+    monkeypatch.setattr(career_module, "ask_ai_for_json", lambda s, p, **k: {
         "items": [{"skill": "Linux", "why": "Servers run Linux.", "objectives": "not a list", "exercises": ["Install Ubuntu"]}]
     })
 
@@ -116,7 +116,7 @@ def test_projects_fallback():
 
 
 def test_projects_ai_validated(monkeypatch):
-    monkeypatch.setattr(career_module, "ask_ai_for_json", lambda s, p: {"projects": [
+    monkeypatch.setattr(career_module, "ask_ai_for_json", lambda s, p, **k: {"projects": [
         {"title": "Expense Tracker API", "objective": "copy", "stack": ["Python"]},
         {"title": "Deploy tracker on Linux", "extends": "Expense Tracker API", "stack": ["Linux", "Rust", "Docker"],
          "features": ["CI"], "objective": "Show Linux"},
@@ -151,7 +151,7 @@ def test_feedback_without_ai():
 
 
 def test_feedback_ai_scores_clamped(monkeypatch):
-    monkeypatch.setattr(career_module, "ask_ai_for_json", lambda s, p: {
+    monkeypatch.setattr(career_module, "ask_ai_for_json", lambda s, p, **k: {
         "scores": {"relevance": 150, "correctness": "abc", "clarity": 70, "completeness": -3, "examples": 50},
         "feedback": "Good.", "improved_answer": "Better."
     })

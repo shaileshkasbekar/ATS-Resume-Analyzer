@@ -20,3 +20,6 @@ Thumbs.db
 # Private resume uploads
 uploads/*
 !uploads/.gitkeep
+
+# Remembered AI answers
+cache/

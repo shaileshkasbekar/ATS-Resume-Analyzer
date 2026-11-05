@@ -230,7 +230,7 @@ Return ONLY valid JSON:
   "skills": [], "advanced": [], "relevance": "", "extends": ""}}]}}
 """
 
-    answer = ask_ai_for_json("You are a senior engineer who mentors students. Return only valid JSON.", prompt)
+    answer = ask_ai_for_json("You are a senior engineer who mentors students. Return only valid JSON.", prompt, cache=False)
 
     if not answer:
         return fallback, False
@@ -348,7 +348,7 @@ Return ONLY valid JSON:
 {{"questions": [{{"category": "", "question": "", "follow_up": "", "suggested_answer": ""}}]}}
 """
 
-    answer = ask_ai_for_json("You are an experienced technical interviewer. Return only valid JSON.", prompt)
+    answer = ask_ai_for_json("You are an experienced technical interviewer. Return only valid JSON.", prompt, cache=False)
 
     if not answer:
         return fallback, False

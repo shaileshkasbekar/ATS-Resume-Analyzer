@@ -24,7 +24,8 @@ from resume_parser.skill_extractor import (
     canonical_skill,
     skill_in_text,
     find_skill_span,
-    find_skill_evidence
+    find_skill_evidence,
+    alternative_family
 )
 
 
@@ -534,9 +535,51 @@ def role_requirements(role_name, role_skill_groups, resume_text):
 
     path_core = {}
 
+    # Alternatives in the same group become one requirement:
+    # MySQL + PostgreSQL in one group -> "MySQL or PostgreSQL"
+
+    families = {}
+
     for data in role_skill_groups:
 
-        item = _item([data["skill_name"]])
+        family = alternative_family(data["skill_name"])
+
+        if family:
+            families.setdefault((data["group_name"], frozenset(family)), []).append(data)
+
+    alternatives = {
+        (d["group_name"], d["skill_name"]): members
+        for members in families.values() if len(members) > 1
+        for d in members
+    }
+
+    done_families = set()
+
+    for data in role_skill_groups:
+
+        members = alternatives.get((data["group_name"], data["skill_name"]))
+
+        if members:
+
+            key = (data["group_name"], tuple(m["skill_name"] for m in members))
+
+            if key in done_families:
+                continue
+
+            done_families.add(key)
+
+            # The most important member decides mandatory / preferred
+
+            data = dict(data, importance=min(
+                (m["importance"] for m in members),
+                key=lambda level: {"core": 0, "supporting": 1, "optional": 2}.get(level, 3)
+            ))
+
+            item = _item([m["skill_name"] for m in members])
+
+        else:
+
+            item = _item([data["skill_name"]])
 
         if data["group_type"] == "common":
 

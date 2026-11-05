@@ -2,8 +2,7 @@ from datetime import date
 
 import pytest
 
-from resume_parser.job_requirements import extract_requirements
-from resume_parser.job_matcher import run_job_match, estimate_experience_years
+from resume_parser.job_matcher import estimate_experience_years
 from resume_parser.jd_analyzer import analyze_job_match
 
 from conftest import PYTHON_FRESHER, JAVA_DEVELOPER, PYTHON_JD, JAVA_JD

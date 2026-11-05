@@ -46,7 +46,7 @@ p { margin: 0 0 4pt 0; }
 .li { margin: 0 0 2pt 10pt; }
 table { width: 100%; border-collapse: collapse; }
 td, th { border: 1px solid #d5d8e5; padding: 3pt 4pt; font-size: 9pt; vertical-align: top; }
-th { background-color: #eef0f8; text-align: left; }
+th { text-align: left; border-bottom: 2px solid #9aa0c8; }
 """
 
 

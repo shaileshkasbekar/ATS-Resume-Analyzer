@@ -47,3 +47,49 @@ def test_pdf_extraction_problems_are_potential():
 
 def test_scoring_version():
     assert analyze_resume(PYTHON_FRESHER)["scoring_version"] == "gen-2.0"
+
+
+# ---------------- Profiles shown as icons / links ----------------
+
+ICON_RESUME = """Aditya Raut
+\u00a7 adity1raut | \u00ef aditya1-raut | araut@example.com
+EDUCATION
+B.Tech in Computer Science, 2023 - 2027
+SKILLS
+Go, Java, SQL
+"""
+
+
+def test_linkedin_found_from_pdf_link():
+    without_links = analyze_resume(ICON_RESUME)
+    with_links = analyze_resume(ICON_RESUME, ["https://linkedin.com/in/aditya1-raut", "https://github.com/adity1raut"])
+
+    assert without_links["linkedin"] is False
+    assert with_links["linkedin"] is True
+    assert with_links["github"] is True
+
+
+def test_linkedin_found_from_address_in_text():
+    assert analyze_resume("Name\nlinkedin.com/in/someone\nSKILLS\nPython")["linkedin"] is True
+
+
+# ---------------- Summary without a heading ----------------
+
+def test_summary_paragraph_without_heading():
+    text = """Riya Sharma
+riya@example.com | +91 98765 43210
+Final-year Computer Science student who builds backend services in Python and Flask,
+with two deployed projects used by more than 200 students and a strong interest in APIs.
+EDUCATION
+B.Tech in Computer Science, 2022 - 2026
+"""
+    assert analyze_resume(text)["sections"]["summary"] is True
+
+
+def test_contact_lines_are_not_a_summary():
+    text = """Riya Sharma
+riya@example.com | +91 98765 43210 | linkedin.com/in/riya | github.com/riya
+EDUCATION
+B.Tech in Computer Science, 2022 - 2026
+"""
+    assert analyze_resume(text)["sections"]["summary"] is False

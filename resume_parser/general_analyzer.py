@@ -212,7 +212,50 @@ def find_issues(text, lines, sections, content, level):
     return {"confirmed": confirmed, "potential": potential}
 
 
-def analyze_resume(text):
+def has_intro_paragraph(text):
+    """
+    A summary written without a "Summary" heading: a paragraph of real
+    sentences between the name/contact lines and the first section.
+    """
+
+    from resume_parser.sections import split_sections
+
+    header = split_sections(text).get("header", "")
+
+    prose = []
+
+    for line in header.splitlines()[1:]:
+
+        line = line.strip()
+
+        # Skip contact lines: emails, links, phone numbers, "a | b | c"
+
+        if not line or "@" in line or "http" in line.lower() or "|" in line:
+            continue
+
+        if re.search(r"\d{5,}", line.replace(" ", "")):
+            continue
+
+        prose.append(line)
+
+    return len(" ".join(prose).split()) >= 20
+
+
+def profile_present(name, text_lower, links):
+    """
+    LinkedIn / GitHub found as a word, as an address in the text,
+    or as the address behind a clickable link in the PDF.
+    """
+
+    domain = f"{name}.com"
+
+    if re.search(r"\b" + name + r"\b", text_lower) or domain in text_lower:
+        return True
+
+    return any(domain in (link or "").lower() for link in links or [])
+
+
+def analyze_resume(text, links=None):
 
     result = {}
 
@@ -266,6 +309,11 @@ def analyze_resume(text):
             for line in lines
         )
 
+    # A summary paragraph under the name, without a heading, also counts
+
+    if not section_result["summary"] and has_intro_paragraph(text):
+        section_result["summary"] = True
+
     result["sections"] = section_result
 
 
@@ -282,9 +330,9 @@ def analyze_resume(text):
     # LinkedIn / GitHub
     # --------------------------------
 
-    linkedin_present = bool(re.search(r"\blinkedin\b", text_lower))
+    linkedin_present = profile_present("linkedin", text_lower, links)
 
-    github_present = bool(re.search(r"\bgithub\b", text_lower))
+    github_present = profile_present("github", text_lower, links)
 
     result["linkedin"] = linkedin_present
     result["github"] = github_present

@@ -28,6 +28,33 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 
+def extract_links_from_pdf(pdf_path):
+    """
+    Web addresses behind clickable links in the PDF. Many resumes show
+    LinkedIn / GitHub only as an icon or a word, with the real address
+    hidden in the link, so the text alone is not enough.
+    """
+
+    try:
+
+        document = fitz.open(pdf_path)
+
+    except Exception:
+
+        return []
+
+    links = [
+        link["uri"]
+        for page in document
+        for link in page.get_links()
+        if link.get("uri")
+    ]
+
+    document.close()
+
+    return links
+
+
 def extract_text_from_pdf_bytes(data):
     """
     Same as above for a PDF held in memory (e.g. an uploaded

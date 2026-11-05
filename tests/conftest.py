@@ -21,6 +21,9 @@ os.chdir(ROOT)
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 
+# Tests must never reuse remembered AI answers
+os.environ["AI_CACHE"] = "0"
+
 
 # =========================================
 # Sample documents
@@ -115,7 +118,7 @@ def fake_ai(monkeypatch):
 
         queue = list(answers)
 
-        def fake(system_message, prompt):
+        def fake(system_message, prompt, **kwargs):
             return queue.pop(0) if queue else None
 
         monkeypatch.setattr(job_requirements, "ask_ai_for_json", fake)

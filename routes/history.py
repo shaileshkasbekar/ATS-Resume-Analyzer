@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect
+from flask import Blueprint, render_template, request, session, redirect, flash
 from models.database import get_db_connection, table_columns
 import json
 
@@ -206,7 +206,8 @@ def view_general_result(result_id):
     connection.close()
 
     if not data:
-        return "General analysis not found."
+        flash("That analysis was not found. It may have been deleted.", "warning")
+        return redirect("/history")
 
 
     # =========================================
@@ -439,7 +440,8 @@ def view_ats_result(result_id):
         cursor.close()
         connection.close()
 
-        return "ATS analysis not found."
+        flash("That analysis was not found. It may have been deleted.", "warning")
+        return redirect("/history")
 
 
     # =========================================
@@ -931,10 +933,12 @@ def view_jd_result(result_id):
     result["job_title"] = data.get("job_title") or result.get("job_title", "")
     result["company"] = data.get("company_name") or result.get("company", "")
 
-    resume_text = repository.resume_text_for(repository.get_jd_result(session["user_id"], result_id) or {})
+    saved = repository.get_jd_result(session["user_id"], result_id) or {}
 
     return render_job_match_result(result, data["file_name"], result_id,
-                                   resume_text=resume_text, analyzed_at=data.get("created_at"))
+                                   resume_text=repository.resume_text_for(saved),
+                                   analyzed_at=data.get("created_at"),
+                                   resume_path=saved.get("file_path"))
 
 
 # =========================================
