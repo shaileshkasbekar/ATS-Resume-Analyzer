@@ -61,9 +61,69 @@ def _layout_values():
     return {"show_admin": g.show_admin}
 
 
+def site_url():
+    """
+    The public address (APP_URL in .env when online), without a trailing slash.
+    """
+
+    return (os.getenv("APP_URL") or request.host_url).rstrip("/")
+
+
 @app.route("/")
 def home():
-    return redirect("/dashboard" if "user_id" in session else "/login")
+
+    # Logged-in users go to their dashboard; everyone else (and Google)
+    # sees the public homepage
+
+    if "user_id" in session:
+        return redirect("/dashboard")
+
+    return render_template("index.html", site_url=site_url(),
+                           google_verification=os.getenv("GOOGLE_SITE_VERIFICATION", ""))
+
+
+@app.route("/health")
+def health():
+
+    # For the hosting service: is the app running and the database reachable?
+
+    from models.database import get_db_connection
+
+    try:
+        get_db_connection().close()
+        return {"status": "ok"}
+    except Exception:
+        return {"status": "database unavailable"}, 503
+
+
+@app.route("/robots.txt")
+def robots():
+
+    lines = [
+        "User-agent: *",
+        "Allow: /$",
+        "Allow: /login",
+        "Allow: /register",
+        "Disallow: /shared/",
+        "Disallow: /history",
+        "Disallow: /report/",
+        f"Sitemap: {site_url()}/sitemap.xml",
+    ]
+
+    return app.response_class("\n".join(lines) + "\n", mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+
+    urls = "".join(
+        f"<url><loc>{site_url()}{path}</loc></url>" for path in ("/", "/register", "/login")
+    )
+
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>'
+           f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>')
+
+    return app.response_class(xml, mimetype="application/xml")
 
 
 # =========================================
