@@ -306,3 +306,38 @@ def test_layout_has_theme_toggle_and_step_loader(client, test_db):
     assert b'data-loading="analysis"' in page
     assert b"data-progress-steps" in page
     assert b"data-shortcuts-dialog" in page
+
+
+# ---------------- Public homepage and search engines ----------------
+
+def test_public_homepage_for_visitors_dashboard_for_users(client, test_db):
+    page = client.get("/")
+
+    assert page.status_code == 200
+    assert b"Free ATS resume checker" in page.data
+    assert b'<meta name="description"' in page.data
+    assert b'"@type": "WebApplication"' in page.data
+
+    login(client, USER_A)
+
+    assert client.get("/").headers["Location"].endswith("/dashboard")
+
+
+def test_robots_and_sitemap(client, monkeypatch):
+    monkeypatch.setenv("APP_URL", "https://ats.example.com/")
+
+    robots = client.get("/robots.txt").data.decode()
+    sitemap = client.get("/sitemap.xml").data.decode()
+
+    assert "Sitemap: https://ats.example.com/sitemap.xml" in robots
+    assert "Disallow: /shared/" in robots
+    assert "<loc>https://ats.example.com/</loc>" in sitemap
+
+
+def test_google_verification_tag_and_health(client, monkeypatch):
+    monkeypatch.setenv("GOOGLE_SITE_VERIFICATION", "abc123")
+
+    html = client.get("/").data.decode()
+    assert '<meta name="google-site-verification" content="abc123">' in html
+
+    assert client.get("/health").get_json() == {"status": "ok"}

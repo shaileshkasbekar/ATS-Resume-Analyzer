@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Free ATS Resume Checker and Job Match Score{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Check your resume against a real job description. See which required skills you match, what is missing and why, get an explained ATS-style score, and improve your resume. Free for students.">
+{% if google_verification %}<meta name="google-site-verification" content="{{ google_verification }}">{% endif %}
+<link rel="canonical" href="{{ site_url }}/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ATS Resume Analyzer - free resume and job match checker">
+<meta property="og:description" content="Match your resume to a job, see missing skills with evidence, and fix them step by step.">
+<meta property="og:url" content="{{ site_url }}/">
+<script type="application/ld+json">
+{{ {"@context": "https://schema.org", "@type": "WebApplication", "name": "ATS Resume Analyzer",
+    "url": site_url ~ "/", "applicationCategory": "BusinessApplication", "operatingSystem": "Any",
+    "description": "Free ATS resume checker that matches a resume to a job description and explains the score.",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR"}}|tojson }}
+</script>
+{% endblock %}
+
+{% block body %}
+
+<header class="landing-nav">
+    <a href="/" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-file-circle-check" aria-hidden="true"></i></div>
+        <strong>ATS Analyzer</strong>
+    </a>
+    <nav class="actions" aria-label="Account">
+        <a href="/login" class="btn btn-ghost">Log in</a>
+        <a href="/register" class="btn btn-primary">Sign up free</a>
+    </nav>
+</header>
+
+<main class="landing" id="main-content">
+
+    <section class="landing-hero">
+        <span class="eyebrow">Free ATS resume checker</span>
+        <h1>See exactly why your resume fits a job — or doesn't</h1>
+        <p>Paste a job description and upload your resume (PDF or Word). Get the job's real requirements, the line in your resume that proves each one, an explained match score, and clear steps to improve.</p>
+        <div class="actions" style="justify-content: center;">
+            <a href="/register" class="btn btn-primary"><i class="fa-solid fa-rocket" aria-hidden="true"></i> Check my resume — free</a>
+            <a href="/login" class="btn btn-ghost">I already have an account</a>
+        </div>
+    </section>
+
+    <section aria-labelledby="how-title">
+        <h2 id="how-title" class="landing-h2">How it works</h2>
+        <ol class="onboarding">
+            <li><strong>Upload your resume</strong>PDF or Word, up to 5 MB.</li>
+            <li><strong>Add a job</strong>Paste the posting, upload it, or pick a role like Backend Developer.</li>
+            <li><strong>Read your result</strong>Required and preferred skills, matched or missing, with evidence and every lost point explained.</li>
+            <li><strong>Improve and prepare</strong>Rewrite suggestions, a tailored resume, a learning roadmap and mock interviews.</li>
+        </ol>
+    </section>
+
+    <section aria-labelledby="features-title">
+        <h2 id="features-title" class="landing-h2">What you get</h2>
+        <div class="grid grid-3">
+            <div class="card"><h3><i class="fa-solid fa-handshake" style="color: var(--primary);" aria-hidden="true"></i> Job match score</h3><p class="muted small" style="margin-top: 6px;">Checked only against what the job asks for. Aliases like JS = JavaScript understood; Java is never confused with JavaScript.</p></div>
+            <div class="card"><h3><i class="fa-solid fa-magnifying-glass" style="color: var(--primary);" aria-hidden="true"></i> Evidence, not guesses</h3><p class="muted small" style="margin-top: 6px;">Each skill shows where it was found: a project, your experience, or only your skills list.</p></div>
+            <div class="card"><h3><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);" aria-hidden="true"></i> Honest AI suggestions</h3><p class="muted small" style="margin-top: 6px;">Rewrites only use facts from your resume. Invented skills are blocked and made-up numbers become placeholders.</p></div>
+            <div class="card"><h3><i class="fa-solid fa-file-pen" style="color: var(--primary);" aria-hidden="true"></i> Tailored resume</h3><p class="muted small" style="margin-top: 6px;">ATS-friendly PDF in four templates, built from the suggestions you accept.</p></div>
+            <div class="card"><h3><i class="fa-solid fa-graduation-cap" style="color: var(--primary);" aria-hidden="true"></i> Learning roadmap</h3><p class="muted small" style="margin-top: 6px;">The missing skills to learn first, with free resources and project ideas.</p></div>
+            <div class="card"><h3><i class="fa-solid fa-comments" style="color: var(--primary);" aria-hidden="true"></i> Interview practice</h3><p class="muted small" style="margin-top: 6px;">Questions for the job, feedback on your answers, cover letter and LinkedIn drafts.</p></div>
+        </div>
+    </section>
+
+    <section class="card" aria-labelledby="faq-title">
+        <h2 id="faq-title" class="landing-h2" style="margin-top: 0;">Questions</h2>
+        <details class="expand"><summary>Is it free?</summary><div class="expand-body"><p>Yes. Create an account and analyse your resume.</p></div></details>
+        <details class="expand"><summary>Is this the score a company's ATS will give me?</summary><div class="expand-body"><p>No tool can know that. This is an explained estimate based on the job description you provide, so you can see what to fix.</p></div></details>
+        <details class="expand"><summary>Is my resume private?</summary><div class="expand-body"><p>Your files are stored privately and shown only to you. For AI features, the text is sent to the Groq AI service. You can delete any analysis at any time.</p></div></details>
+    </section>
+
+</main>
+
+<footer class="landing-foot muted small">
+    ATS Resume Analyzer · made by Shailesh Kasbekar · SGGS Institute of Engineering and Technology, Nanded
+</footer>
+
+{% endblock %}

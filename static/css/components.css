@@ -846,3 +846,54 @@ kbd {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+
+/* Public homepage */
+
+.landing-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 18px 16px;
+}
+
+.landing {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 16px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.landing-hero {
+    padding: 48px 0 8px;
+    text-align: center;
+}
+
+.landing-hero h1 {
+    max-width: 760px;
+    margin: 0 auto 14px;
+    font-size: clamp(28px, 5vw, 42px);
+}
+
+.landing-hero p {
+    max-width: 680px;
+    margin: 0 auto 24px;
+    color: var(--text-2);
+    font-size: 16px;
+}
+
+.landing-h2 {
+    margin-bottom: 14px;
+    font-size: 22px;
+}
+
+.landing-foot {
+    padding: 24px 16px 32px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+}
