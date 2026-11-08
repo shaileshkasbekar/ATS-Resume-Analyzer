@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, redirect, flash, request, render_template, session
+from flask import Flask, redirect, flash, request, render_template, session, g
 
 from config import Config
 from security import init_security
@@ -17,6 +17,9 @@ from routes.versions import versions
 from routes.jobs import jobs
 from routes.career import career
 from routes.workspace import workspace
+from routes.applications import applications
+from routes.writer import writer
+from routes.admin import admin, is_admin, load_registered_skills
 
 
 app = Flask(__name__)
@@ -31,8 +34,31 @@ os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 init_security(app)
 
 for blueprint in (auth, upload, dashboard, history, general_analyzer, job_match,
-                  assistant, reports, versions, jobs, career, workspace):
+                  assistant, reports, versions, jobs, career, workspace,
+                  applications, writer, admin):
     app.register_blueprint(blueprint)
+
+
+# Skills added to job roles in the database are recognised everywhere
+
+load_registered_skills()
+
+
+@app.context_processor
+def _layout_values():
+    # Only needed for the sidebar; must never break a page (e.g. error pages)
+
+    if "user_id" not in session:
+        return {"show_admin": False}
+
+    if "show_admin" not in g:
+
+        try:
+            g.show_admin = is_admin()
+        except Exception:
+            g.show_admin = False
+
+    return {"show_admin": g.show_admin}
 
 
 @app.route("/")

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Admin{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Admin</span>
+        <h1>Job roles and skills</h1>
+        <p>Used by the ATS Role Check and the "Job role" option of Job Match. New skills are recognised in resumes and job descriptions immediately.</p>
+    </div>
+</div>
+
+<div class="stack">
+
+    <form method="POST" action="/admin/roles" class="card">
+        {{ csrf_field() }}
+        <div class="card-head"><h2><i class="fa-solid fa-plus" aria-hidden="true"></i> Add a role</h2></div>
+        <div class="grid grid-2">
+            <div class="field">
+                <label for="role_name">Role name</label>
+                <input class="input" id="role_name" name="role_name" maxlength="100" required placeholder="e.g. Cloud Engineer">
+            </div>
+            <div class="field">
+                <label for="description">Description <span class="muted small">(optional)</span></label>
+                <input class="input" id="description" name="description" maxlength="1000">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Add role</button>
+    </form>
+
+    <p class="field-hint">
+        <strong>Common</strong> groups are required for everyone in the role.
+        <strong>Technology</strong> groups are alternatives (for example Python / Java / Node.js backend): only the candidate's strongest one counts.
+        Importance <strong>core</strong> is required, <strong>supporting</strong> is important, <strong>optional</strong> is a bonus.
+    </p>
+
+    {% for role in roles %}
+    <details class="card expand" style="padding: 0;">
+        <summary style="padding: 16px 20px;">
+            <span>{{ role.role_name }}</span>
+            <span class="badge tint-primary">{{ role.groups|length }} groups</span>
+            {% if role.uses %}<span class="badge tint-info">{{ role.uses }} analyses</span>{% endif %}
+        </summary>
+        <div style="padding: 0 20px 18px;" class="stack">
+
+            {% for group in role.groups %}
+            <div class="group">
+                <div class="group-head">
+                    <h3>{{ group.group_name }} <span class="badge tint-{{ 'good' if group.group_type == 'common' else 'info' }}">{{ group.group_type }}</span></h3>
+                    <form method="POST" action="/admin/groups/{{ group.group_id }}/delete">
+                        {{ csrf_field() }}
+                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Delete group {{ group.group_name }}" data-confirm="Delete the group {{ group.group_name }} and all its skills?"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+                    </form>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Skill</th><th>Importance</th><th>Weight</th><th></th></tr></thead>
+                        <tbody>
+                            {% for skill in group.skills %}
+                            <tr>
+                                <td><strong>{{ skill.skill_name }}</strong></td>
+                                <td colspan="3">
+                                    <form method="POST" action="/admin/skills/{{ skill.id }}" class="actions">
+                                        {{ csrf_field() }}
+                                        <label class="sr-only" for="imp-{{ skill.id }}">Importance of {{ skill.skill_name }}</label>
+                                        <select class="input" id="imp-{{ skill.id }}" name="importance" style="width: auto;">
+                                            {% for level in importance %}<option value="{{ level }}" {% if level == skill.importance %}selected{% endif %}>{{ level }}</option>{% endfor %}
+                                        </select>
+                                        <label class="sr-only" for="w-{{ skill.id }}">Weight of {{ skill.skill_name }}</label>
+                                        <input class="input" id="w-{{ skill.id }}" type="number" name="weight" min="0.5" max="10" step="0.5" value="{{ skill.weight }}" style="width: 90px;">
+                                        <button type="submit" name="action" value="save" class="btn btn-ghost btn-sm">Save</button>
+                                        <button type="submit" name="action" value="delete" class="btn btn-danger btn-sm" aria-label="Remove {{ skill.skill_name }}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="muted small">No skills yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <form method="POST" action="/admin/skills" class="actions" style="margin-top: 8px;">
+                    {{ csrf_field() }}
+                    <input type="hidden" name="group_id" value="{{ group.group_id }}">
+                    <label class="sr-only" for="new-skill-{{ group.group_id }}">New skill for {{ group.group_name }}</label>
+                    <input class="input" id="new-skill-{{ group.group_id }}" name="skill_name" maxlength="100" required placeholder="New skill" style="flex: 1 1 160px;">
+                    <select class="input" name="importance" style="width: auto;" aria-label="Importance">
+                        {% for level in importance %}<option value="{{ level }}" {% if level == "supporting" %}selected{% endif %}>{{ level }}</option>{% endfor %}
+                    </select>
+                    <input class="input" type="number" name="weight" min="0.5" max="10" step="0.5" value="2" style="width: 90px;" aria-label="Weight">
+                    <button type="submit" class="btn btn-ghost btn-sm">Add skill</button>
+                </form>
+            </div>
+            {% endfor %}
+
+            <form method="POST" action="/admin/groups" class="actions">
+                {{ csrf_field() }}
+                <input type="hidden" name="role_id" value="{{ role.role_id }}">
+                <label class="sr-only" for="new-group-{{ role.role_id }}">New group for {{ role.role_name }}</label>
+                <input class="input" id="new-group-{{ role.role_id }}" name="group_name" maxlength="100" required placeholder="New skill group" style="flex: 1 1 180px;">
+                <select class="input" name="group_type" style="width: auto;" aria-label="Group type">
+                    {% for t in group_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn btn-ghost btn-sm">Add group</button>
+            </form>
+
+            {% if not role.uses %}
+            <form method="POST" action="/admin/roles/{{ role.role_id }}/delete">
+                {{ csrf_field() }}
+                <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete the role {{ role.role_name }}?">Delete role</button>
+            </form>
+            {% endif %}
+
+        </div>
+    </details>
+    {% endfor %}
+
+</div>
+
+{% endblock %}

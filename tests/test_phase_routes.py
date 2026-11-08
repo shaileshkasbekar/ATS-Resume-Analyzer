@@ -18,7 +18,7 @@ USER_B = 2
 
 def db(test_db):
     return mysql.connector.connect(
-        host=Config.MYSQL_HOST, user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD, database=test_db
+        host=Config.MYSQL_HOST, port=Config.MYSQL_PORT, user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD, database=test_db
     )
 
 

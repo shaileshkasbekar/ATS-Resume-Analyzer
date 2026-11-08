@@ -55,7 +55,7 @@ def main():
     # Each .sql file selects the database with USE.
 
     connection = mysql.connector.connect(
-        host=Config.MYSQL_HOST,
+        host=Config.MYSQL_HOST, port=Config.MYSQL_PORT,
         user=Config.MYSQL_USER,
         password=Config.MYSQL_PASSWORD
     )

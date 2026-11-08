@@ -84,7 +84,7 @@ def test_old_role_check_address_forwards_to_job_match(client, test_db):
 def test_role_check_form_gives_consistent_result(client, test_db):
     login(client, 1)
 
-    connection = mysql.connector.connect(host=Config.MYSQL_HOST, user=Config.MYSQL_USER,
+    connection = mysql.connector.connect(host=Config.MYSQL_HOST, port=Config.MYSQL_PORT, user=Config.MYSQL_USER,
                                          password=Config.MYSQL_PASSWORD, database=test_db)
     try:
         cursor = connection.cursor(dictionary=True)
@@ -102,7 +102,7 @@ def test_role_check_form_gives_consistent_result(client, test_db):
 
     assert response.status_code == 200
 
-    connection = mysql.connector.connect(host=Config.MYSQL_HOST, user=Config.MYSQL_USER,
+    connection = mysql.connector.connect(host=Config.MYSQL_HOST, port=Config.MYSQL_PORT, user=Config.MYSQL_USER,
                                          password=Config.MYSQL_PASSWORD, database=test_db)
     try:
         cursor = connection.cursor(dictionary=True)

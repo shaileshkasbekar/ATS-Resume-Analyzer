@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Writing Tools{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Writing tools</span>
+        <h1>Cover letter and LinkedIn for {{ row.job_title or "this job" }}</h1>
+        <p>Drafts written only from your resume. Edit them, then copy or download. Sentences that claim skills your resume does not show are removed automatically.</p>
+    </div>
+    <a href="/history/jd/{{ row.jd_result_id }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Job match</a>
+</div>
+
+{% if resume_missing %}
+<div class="card empty-state"><h3>Resume not available</h3><p>The resume file for this analysis is no longer stored.</p></div>
+{% else %}
+
+<div class="stack">
+
+    <!-- ================= COVER LETTER ================= -->
+
+    <section class="card" id="cover_letter" aria-labelledby="letter-title">
+        <div class="card-head">
+            <h2 id="letter-title"><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i> Cover letter</h2>
+            <form method="POST" action="/write/{{ row.jd_result_id }}/cover_letter" data-loading>
+                {{ csrf_field() }}
+                <button type="submit" class="btn {{ 'btn-ghost' if letter else 'btn-primary' }} btn-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> {{ "Write a new draft" if letter else "Write cover letter" }}
+                </button>
+            </form>
+        </div>
+
+        {% if letter %}
+        <form method="POST" action="/write/{{ row.jd_result_id }}/cover_letter/save">
+            {{ csrf_field() }}
+            <label for="letter-text" class="sr-only">Cover letter text</label>
+            <textarea class="input" id="letter-text" name="text" maxlength="6000" style="min-height: 340px;">{{ letter.text }}</textarea>
+            {% if letter.needs_metric %}<p class="field-hint" style="margin-top: 6px;"><i class="fa-solid fa-hashtag" aria-hidden="true"></i> Replace every <strong>[bracket]</strong> with your real details before sending.</p>{% endif %}
+            {% if letter.removed %}
+            <details class="expand" style="margin-top: 10px;">
+                <summary>{{ letter.removed|length }} sentence(s) removed (skills not in your resume)</summary>
+                <div class="expand-body">{% for s in letter.removed %}<p><q>{{ s }}</q></p>{% endfor %}</div>
+            </details>
+            {% endif %}
+            <div class="actions" style="margin-top: 12px;">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save edits</button>
+                <button type="button" class="btn btn-ghost btn-sm" data-copy="#letter-text"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button>
+                <a href="/write/{{ row.jd_result_id }}/cover_letter.txt" class="btn btn-ghost btn-sm"><i class="fa-solid fa-download" aria-hidden="true"></i> Download .txt</a>
+            </div>
+        </form>
+        {% else %}
+        <p class="empty">No cover letter yet.</p>
+        {% endif %}
+    </section>
+
+    <!-- ================= LINKEDIN ================= -->
+
+    <section class="card" id="linkedin" aria-labelledby="linkedin-title">
+        <div class="card-head">
+            <h2 id="linkedin-title"><i class="fa-brands fa-linkedin" aria-hidden="true"></i> LinkedIn headline and About</h2>
+            <form method="POST" action="/write/{{ row.jd_result_id }}/linkedin" data-loading>
+                {{ csrf_field() }}
+                <button type="submit" class="btn {{ 'btn-ghost' if linkedin else 'btn-primary' }} btn-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> {{ "Write a new draft" if linkedin else "Write LinkedIn profile" }}
+                </button>
+            </form>
+        </div>
+
+        {% if linkedin %}
+        <form method="POST" action="/write/{{ row.jd_result_id }}/linkedin/save">
+            {{ csrf_field() }}
+            <div class="field">
+                <label for="headline">Headline</label>
+                <input class="input" id="headline" name="headline" maxlength="220" value="{{ linkedin.headline }}">
+            </div>
+            <div class="field">
+                <label for="about">About</label>
+                <textarea class="input" id="about" name="about" maxlength="2600" style="min-height: 220px;">{{ linkedin.about }}</textarea>
+            </div>
+            {% if linkedin.removed %}
+            <details class="expand" style="margin-bottom: 10px;">
+                <summary>{{ linkedin.removed|length }} sentence(s) removed (skills not in your resume)</summary>
+                <div class="expand-body">{% for s in linkedin.removed %}<p><q>{{ s }}</q></p>{% endfor %}</div>
+            </details>
+            {% endif %}
+            <div class="actions">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save edits</button>
+                <button type="button" class="btn btn-ghost btn-sm" data-copy="#headline"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy headline</button>
+                <button type="button" class="btn btn-ghost btn-sm" data-copy="#about"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy About</button>
+                <a href="/write/{{ row.jd_result_id }}/linkedin.txt" class="btn btn-ghost btn-sm"><i class="fa-solid fa-download" aria-hidden="true"></i> Download .txt</a>
+            </div>
+        </form>
+        {% else %}
+        <p class="empty">No LinkedIn draft yet.</p>
+        {% endif %}
+    </section>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

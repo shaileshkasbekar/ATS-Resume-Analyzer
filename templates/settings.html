@@ -51,6 +51,30 @@
 </div>
 
 <div class="card" style="margin-top: 18px;">
+    <div class="card-head"><h2><i class="fa-solid fa-sliders" aria-hidden="true"></i> Preferences</h2></div>
+    <label class="checkbox">
+        <input type="checkbox" data-shortcuts-setting checked>
+        Keyboard shortcuts (press <kbd>?</kbd> on any page to see them)
+    </label>
+    <p class="field-hint">Theme (System / Light / Dark) is switched with the button at the bottom of the sidebar. Both are saved in this browser.</p>
+</div>
+
+{% if has_reminders %}
+<form method="POST" action="/settings/reminders" class="card" style="margin-top: 18px;">
+    {{ csrf_field() }}
+    <div class="card-head"><h2><i class="fa-regular fa-bell" aria-hidden="true"></i> Email reminders</h2></div>
+    <label class="checkbox">
+        <input type="checkbox" name="reminders_enabled" value="1" {% if user.reminders_enabled %}checked{% endif %}>
+        Send me a weekly email about my open learning-roadmap tasks
+    </label>
+    {% if not email_ready %}
+    <p class="field-hint">Email sending is not set up on this server yet, so no emails are sent for now. Your choice is saved.</p>
+    {% endif %}
+    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+</form>
+{% endif %}
+
+<div class="card" style="margin-top: 18px;">
     <div class="card-head"><h2><i class="fa-solid fa-shield-halved"></i> Privacy</h2></div>
     <ul class="list list-tip">
         <li><i class="fa-solid fa-lock"></i><span>Your resumes are stored in a private folder and are only shown to you.</span></li>

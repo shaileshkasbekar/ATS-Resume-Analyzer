@@ -12,7 +12,7 @@ from models import repository
 from models.repository import _execute, _query
 from pdf_export import html_to_pdf
 from resume_parser.improvement import KIND_LABELS, generate_suggestions
-from resume_parser.pdf_reader import extract_text_from_pdf
+from resume_parser.document_reader import extract_text
 from resume_parser.resume_builder import TEMPLATES, build_resume, doc_to_text
 from resume_parser.version_compare import compare_versions
 from security import login_required, rate_limit
@@ -295,7 +295,7 @@ def save_optimized(jd_result_id):
 
     label = f"Optimized for {row.get('job_title') or 'job'} ({TEMPLATES[doc['template']]['label']})"[:100]
 
-    repository.add_version(session["user_id"], label, file_name, path, extract_text_from_pdf(path))
+    repository.add_version(session["user_id"], label, file_name, path, extract_text(path))
 
     flash("Saved as a new resume version. Your original resume was not changed.", "success")
 

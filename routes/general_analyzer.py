@@ -1,18 +1,15 @@
 from flask import Blueprint, render_template, request, session, redirect, flash
 
-from resume_parser.pdf_reader import extract_text_from_pdf, extract_links_from_pdf
+from resume_parser.document_reader import extract_links
+from routes.job_match import save_resume_upload
 from resume_parser.general_analyzer import analyze_resume
 from resume_parser.general_ai_analyzer import analyze_general_resume_with_ai
 from resume_parser.ai_client import get_score
 
-from werkzeug.utils import secure_filename
 
 from models.database import get_db_connection, table_columns
-from config import Config
 
-import os
 import json
-import uuid
 
 
 # =========================================
@@ -54,75 +51,14 @@ def analyze():
         # Get Resume
         # -----------------------------------------
 
-        resume = request.files.get("resume")
+        # Shared validation and saving (PDF or Word, real file type,
+        # private folder, text extraction)
 
+        filename, filepath, text, error = save_resume_upload(request.files.get("resume"))
 
-        if not resume or resume.filename == "":
+        if error:
 
-            flash("Please select a resume.", "danger")
-
-            return redirect("/general-analyzer")
-
-
-        # -----------------------------------------
-        # Allow only PDF
-        # -----------------------------------------
-
-        if not resume.filename.lower().endswith(".pdf"):
-
-            flash("Only PDF files are allowed.", "danger")
-
-            return redirect("/general-analyzer")
-
-
-        # -----------------------------------------
-        # Secure filename
-        # -----------------------------------------
-
-        filename = secure_filename(
-            resume.filename
-        ) or "resume.pdf"
-
-
-        # -----------------------------------------
-        # Create file path
-        # -----------------------------------------
-
-        # Unique prefix so two uploads with the same
-        # name never overwrite each other
-
-        filepath = os.path.join(
-            Config.UPLOAD_FOLDER,
-            f"{uuid.uuid4().hex[:8]}_{filename}"
-        )
-
-
-        # -----------------------------------------
-        # Save PDF
-        # -----------------------------------------
-
-        resume.save(filepath)
-
-
-        # =========================================
-        # EXTRACT TEXT
-        # =========================================
-
-        text = extract_text_from_pdf(
-            filepath
-        )
-
-
-        if not text.strip():
-
-            os.remove(filepath)
-
-            flash(
-                "Could not read text from this PDF. "
-                "If it is a scanned image, please upload "
-                "a text-based PDF.",
-                "danger"
-            )
+            flash(error, "danger")
 
             return redirect("/general-analyzer")
 
@@ -131,11 +67,11 @@ def analyze():
         # RULE-BASED ANALYSIS
         # =========================================
 
-        # Links inside the PDF too (LinkedIn / GitHub shown as icons)
+        # Links inside the file too (LinkedIn / GitHub shown as icons)
 
         result = analyze_resume(
             text,
-            extract_links_from_pdf(filepath)
+            extract_links(filepath)
         )
 
 

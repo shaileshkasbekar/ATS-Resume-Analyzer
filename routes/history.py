@@ -938,7 +938,9 @@ def view_jd_result(result_id):
     return render_job_match_result(result, data["file_name"], result_id,
                                    resume_text=repository.resume_text_for(saved),
                                    analyzed_at=data.get("created_at"),
-                                   resume_path=saved.get("file_path"))
+                                   resume_path=saved.get("file_path"),
+                                   jd_text=data.get("job_description") or "",
+                                   share_token=saved.get("share_token"))
 
 
 # =========================================

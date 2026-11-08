@@ -12,11 +12,16 @@
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
         --on-primary: #0e1020;
         --primary-hover: #a5b0fb;
     }
 }
+
+:root[data-theme="dark"] {
+        --on-primary: #0e1020;
+        --primary-hover: #a5b0fb;
+    }
 
 .btn-primary,
 .btn-primary:hover {
@@ -574,4 +579,270 @@ details.card.expand .learning-card {
 .score-tile .ring-inner span {
     font-size: 10px;
     letter-spacing: 0.03em;
+}
+
+
+/* Theme toggle in the sidebar */
+
+.theme-toggle {
+    width: 100%;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+
+/* Toast messages (pages with the sidebar) */
+
+.content > .flashes {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 90;
+    width: min(420px, calc(100vw - 32px));
+    margin: 0;
+}
+
+.content > .flashes .flash {
+    box-shadow: 0 8px 28px rgba(10, 12, 25, 0.18);
+    border: 1px solid var(--border);
+    animation: toast-in 0.2s ease-out;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.content > .flashes .flash.leaving {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 900px) {
+    .content > .flashes {
+        top: 70px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .content > .flashes .flash {
+        animation: none;
+        transition: none;
+    }
+}
+
+
+/* Step-by-step loading screen */
+
+.progress-steps {
+    list-style: none;
+    margin: 16px 0 8px;
+    padding: 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.progress-steps[hidden] {
+    display: none;
+}
+
+.progress-steps li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-3);
+}
+
+.progress-steps li::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+}
+
+.progress-steps li.current {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.progress-steps li.current::before {
+    border-color: var(--primary);
+    border-top-color: transparent;
+    animation: spin 0.9s linear infinite;
+}
+
+.progress-steps li.done {
+    color: var(--text-2);
+}
+
+.progress-steps li.done::before {
+    content: "\2713";
+    display: grid;
+    place-items: center;
+    border-color: var(--good);
+    background: var(--good);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+
+/* Back to top */
+
+.back-to-top {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 40;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+}
+
+.back-to-top[hidden] {
+    display: none;
+}
+
+
+/* Keyboard shortcut keys */
+
+kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--surface-2);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.shortcuts-dialog td {
+    border: 0;
+    padding: 6px 8px;
+}
+
+
+/* Chart placeholder until the chart is drawn */
+
+.chart-box:not(.ready) {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--track) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+    to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chart-box:not(.ready) {
+        animation: none;
+    }
+}
+
+
+/* Highlighted resume / job text */
+
+.hl-text {
+    max-height: 520px;
+    overflow-y: auto;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.hl-text mark,
+.hl-legend mark {
+    padding: 0 3px;
+    border-radius: 4px;
+    color: var(--text);
+}
+
+.hl-have { background: var(--good-soft); box-shadow: inset 0 -2px 0 var(--good); }
+.hl-partial { background: var(--ok-soft); box-shadow: inset 0 -2px 0 var(--ok); }
+.hl-missing { background: var(--low-soft); box-shadow: inset 0 -2px 0 var(--low); }
+
+.hl-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+
+/* Application tracker board */
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.board-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+}
+
+.board-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.board-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+}
+
+.board-move {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.board-move select {
+    padding: 6px 8px;
+    font-size: 13px;
+}
+
+@media (max-width: 640px) {
+    .board {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }

@@ -14,7 +14,7 @@
 
 <div class="upload-layout">
 
-    <form method="POST" action="/job-match" enctype="multipart/form-data" class="card" data-loading>
+    <form method="POST" action="/job-match" enctype="multipart/form-data" class="card" data-loading="analysis">
         {{ csrf_field() }}
         <input type="hidden" name="mode" value="role">
 
@@ -29,15 +29,15 @@
         </div>
 
         <div class="field">
-            <label for="role-resume">Resume PDF</label>
+            <label for="role-resume">Resume file</label>
             <div class="dropzone">
-                <input type="file" id="role-resume" name="resume" accept=".pdf" required aria-describedby="role-resume-help">
+                <input type="file" id="role-resume" name="resume" accept=".pdf,.docx" required aria-describedby="role-resume-help">
                 <div class="dropzone-icon" aria-hidden="true"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <strong>Drag and drop your resume here</strong>
                 <span class="btn btn-ghost btn-sm" aria-hidden="true">Browse files</span>
                 <span class="dropzone-file" aria-live="polite"></span>
             </div>
-            <span class="field-hint" id="role-resume-help">PDF only, up to 5 MB. Use a text-based PDF (scanned images cannot be read).</span>
+            <span class="field-hint" id="role-resume-help">PDF or Word (.docx), up to 5 MB.</span>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">

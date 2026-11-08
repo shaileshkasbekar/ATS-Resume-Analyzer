@@ -11,7 +11,10 @@ from models.database import get_db_connection, table_columns
 from models import repository
 from security import login_required, rate_limit
 
-from resume_parser.pdf_reader import extract_text_from_pdf, extract_text_from_pdf_bytes, extract_links_from_pdf
+from resume_parser.document_reader import (
+    extract_text, extract_text_from_bytes, extract_links,
+    is_supported, has_valid_signature, ocr_available
+)
 from resume_parser.jd_analyzer import analyze_job_match, analyze_role_match, plan_skills
 from resume_parser.job_requirements import extract_requirements
 from resume_parser.job_matcher import run_job_match
@@ -88,13 +91,13 @@ def read_job_description_file(upload):
 
     data = upload.read()
 
-    if name.endswith(".pdf"):
-        return extract_text_from_pdf_bytes(data), None
+    if name.endswith((".pdf", ".docx")):
+        return extract_text_from_bytes(name, data), None
 
     if name.endswith(".txt"):
         return data.decode("utf-8", errors="replace"), None
 
-    return "", "The job description file must be a PDF or TXT file."
+    return "", "The job description file must be a PDF, Word (.docx) or TXT file."
 
 
 def save_resume_upload(upload):
@@ -106,33 +109,33 @@ def save_resume_upload(upload):
     if not upload or upload.filename == "":
         return None, None, "", "Please select a resume."
 
-    if not upload.filename.lower().endswith(".pdf"):
-        return None, None, "", "Only PDF resumes are allowed."
+    if not is_supported(upload.filename):
+        return None, None, "", "Please upload your resume as a PDF or Word (.docx) file."
 
-    # Check the file really is a PDF, not just named .pdf
+    # Check the file really is that type, not just named like it
 
-    if upload.stream.read(5) != b"%PDF-":
-        return None, None, "", "This file is not a valid PDF."
+    if not has_valid_signature(upload.filename, upload.stream.read(8)):
+        return None, None, "", "This file is damaged or not a real PDF / Word file."
 
     upload.stream.seek(0)
 
     os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 
-    filename = secure_filename(upload.filename) or "resume.pdf"
+    filename = secure_filename(upload.filename) or ("resume" + os.path.splitext(upload.filename.lower())[1])
 
     filepath = os.path.join(Config.UPLOAD_FOLDER, f"{uuid.uuid4().hex[:8]}_{filename}")
 
     upload.save(filepath)
 
-    text = extract_text_from_pdf(filepath)
+    text = extract_text(filepath)
 
     if not text.strip():
 
         os.remove(filepath)
 
         return None, None, "", (
-            "Could not read text from this resume PDF. "
-            "If it is a scanned image, please upload a text-based PDF."
+            "Could not read text from this file. It looks like a scanned image."
+            + ("" if ocr_available() else " Please upload a text-based PDF or a Word file.")
         )
 
     return filename, filepath, text, None
@@ -318,7 +321,7 @@ def match_job():
         version_id = version["version_id"]
         filename = version["file_name"]
         filepath = version["file_path"]
-        text = version["resume_text"] or extract_text_from_pdf(filepath)
+        text = version["resume_text"] or extract_text(filepath)
 
     else:
 
@@ -386,7 +389,7 @@ def match_job():
         keep_file=version_id is not None
     )
 
-    return render_job_match_result(result, filename, jd_result_id, resume_text=text, resume_path=filepath)
+    return render_job_match_result(result, filename, jd_result_id, resume_text=text, resume_path=filepath, jd_text=jd_text)
 
 
 def save_job_match(user_id, filename, filepath, result, jd_text, mode, role_id,
@@ -514,7 +517,7 @@ def normalize_result(result):
     return result
 
 
-def render_job_match_result(result, filename, jd_result_id=None, resume_text="", analyzed_at=None, resume_path=None):
+def render_job_match_result(result, filename, jd_result_id=None, resume_text="", analyzed_at=None, resume_path=None, jd_text="", share_token=None):
     """
     Shared by the new result and the saved one in history.
     Only re-arranges the saved result for display (see result_view.py).
@@ -549,7 +552,7 @@ def render_job_match_result(result, filename, jd_result_id=None, resume_text="",
 
     # Resume quality from the existing rule-based checker (no AI, no new scoring)
 
-    links = extract_links_from_pdf(resume_path) if resume_path and os.path.exists(resume_path) else []
+    links = extract_links(resume_path)
 
     quality = analyze_resume(resume_text, links) if resume_text.strip() else None
 
@@ -568,7 +571,12 @@ def render_job_match_result(result, filename, jd_result_id=None, resume_text="",
         suggestions=suggestions,
         kind_labels=KIND_LABELS,
         has_roadmap=has_roadmap,
-        learning_plan=build_learning_plan(missing, importance)
+        learning_plan=build_learning_plan(missing, importance),
+        share_enabled="share_token" in repository.columns_of("jd_results"),
+        share_token=share_token,
+        highlights=result_view.highlighted_texts(
+            result, resume_text, jd_text if result.get("source_type") != "role" else ""
+        )
     )
 
 

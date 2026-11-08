@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Apply the saved theme before the page draws (no flash of the wrong theme) -->
+    <script>
+        try {
+            var savedTheme = localStorage.getItem("theme");
+            if (savedTheme === "light" || savedTheme === "dark") {
+                document.documentElement.setAttribute("data-theme", savedTheme);
+            }
+        } catch (e) {}
+    </script>
+
     <title>{% block title %}ATS Resume Analyzer{% endblock %} | ATS Analyzer</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -77,10 +87,12 @@
             {{ nav_link("/resumes", "fa-code-branch", "Resume Versions", p.startswith("/resumes")) }}
             {{ nav_link("/jobs", "fa-bookmark", "Saved Jobs", p.startswith("/jobs")) }}
             {{ nav_link("/jobs#compare", "fa-table-columns", "Job Comparison", false) }}
+            {{ nav_link("/applications", "fa-briefcase", "Applications", p.startswith("/applications")) }}
             {{ nav_link("/history", "fa-clock-rotate-left", "History", p == "/history") }}
 
             <span class="nav-label">Settings</span>
             {{ nav_link("/settings", "fa-gear", "Profile & Password", p.startswith("/settings")) }}
+            {% if show_admin %}{{ nav_link("/admin", "fa-user-shield", "Admin: roles & skills", p.startswith("/admin")) }}{% endif %}
 
         </nav>
 
@@ -95,6 +107,11 @@
                     <span>Signed in</span>
                 </div>
             </div>
+
+            <button type="button" class="logout theme-toggle" data-theme-toggle aria-live="polite">
+                <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+                <span data-theme-label>Theme: System</span>
+            </button>
 
             <a href="/logout" class="logout">
                 <i class="fa-solid fa-right-from-bracket"></i>
@@ -144,16 +161,43 @@
 
 <!-- ================= LOADING SCREEN ================= -->
 
-<div class="overlay" id="loading-overlay" hidden>
+<div class="overlay" id="loading-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="loading-title">
     <div class="overlay-box">
-        <div class="spinner"></div>
-        <h3>Analyzing your resume…</h3>
-        <p class="muted small">
-            Reading the PDF, matching skills and running the AI review.
-            This can take up to a minute.
-        </p>
+        <div class="spinner" aria-hidden="true"></div>
+        <h3 id="loading-title" data-loading-title>Working on it…</h3>
+
+        <ol class="progress-steps" data-progress-steps hidden>
+            <li>Reading your file</li>
+            <li>Finding sections and skills</li>
+            <li>Matching the requirements</li>
+            <li>AI review</li>
+            <li>Building your report</li>
+        </ol>
+
+        <p class="muted small" data-loading-note>This can take up to a minute.</p>
     </div>
 </div>
+
+<button type="button" class="back-to-top" data-back-to-top hidden aria-label="Back to top">
+    <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+</button>
+
+<dialog class="confirm shortcuts-dialog" data-shortcuts-dialog aria-labelledby="shortcuts-title">
+    <h3 id="shortcuts-title">Keyboard shortcuts</h3>
+    <table>
+        <tbody>
+            <tr><td><kbd>n</kbd></td><td>New job match</td></tr>
+            <tr><td><kbd>d</kbd></td><td>Dashboard</td></tr>
+            <tr><td><kbd>a</kbd></td><td>Action Center</td></tr>
+            <tr><td><kbd>/</kbd></td><td>Search (on pages with a search box)</td></tr>
+            <tr><td><kbd>?</kbd></td><td>Show this list</td></tr>
+        </tbody>
+    </table>
+    <p class="muted small" style="margin-top: 12px;">Turn shortcuts off in <a href="/settings">Settings</a>.</p>
+    <div class="actions" style="justify-content: flex-end; margin-top: 12px;">
+        <button type="button" class="btn btn-ghost" data-close-dialog>Close</button>
+    </div>
+</dialog>
 
 {% block scripts %}{% endblock %}
 

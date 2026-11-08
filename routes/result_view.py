@@ -170,3 +170,91 @@ def evidence_rows(result):
         })
 
     return rows
+
+
+# =========================================
+# Highlighted text (resume and job description)
+# =========================================
+
+def highlight(text, terms, max_chars=12000):
+    """
+    Splits text into [(chunk, kind)] where kind is None or the kind of the
+    term found there. terms: [(skill name, kind)]. Uses the same whole-word
+    and alias rules as the matcher. The template escapes every chunk.
+    """
+
+    import re
+
+    from resume_parser.skill_extractor import skill_names, _word_pattern
+
+    text = (text or "")[:max_chars]
+    lower = text.lower()
+
+    spans = []
+
+    for name, kind in terms:
+        for alias in skill_names(name):
+            for match in re.finditer(_word_pattern(alias), lower):
+                spans.append((match.start(), match.end(), kind))
+
+    # Keep the earliest, then longest, non-overlapping spans
+
+    spans.sort(key=lambda s: (s[0], -(s[1] - s[0])))
+
+    segments = []
+    position = 0
+
+    for start, end, kind in spans:
+
+        if start < position:
+            continue
+
+        if start > position:
+            segments.append((text[position:start], None))
+
+        segments.append((text[start:end], kind))
+        position = end
+
+    if position < len(text):
+        segments.append((text[position:], None))
+
+    return segments
+
+
+def _term_kind(match):
+
+    if match["status"] == "missing":
+        return "missing"
+
+    if match["match_type"] == "semantic" or match.get("evidence") in ("listed", "mentioned"):
+        return "partial"
+
+    return "have"
+
+
+def highlighted_texts(result, resume_text, jd_text):
+    """
+    (resume segments, job segments), or None for a part that is not available.
+    """
+
+    matches = result.get("mandatory", []) + result.get("preferred", [])
+
+    resume_terms = []
+    job_terms = []
+
+    for m in matches:
+
+        kind = _term_kind(m)
+
+        # In the job: every option of the requirement, coloured by result
+        for option in m.get("any_of", []):
+            job_terms.append((option, kind))
+
+        # In the resume: only the skill that matched
+        if m["status"] == "matched" and m.get("matched_skill"):
+            resume_terms.append((m["matched_skill"], kind))
+
+    resume = highlight(resume_text, resume_terms) if resume_text and resume_text.strip() else None
+    job = highlight(jd_text, job_terms) if jd_text and jd_text.strip() else None
+
+    return resume, job

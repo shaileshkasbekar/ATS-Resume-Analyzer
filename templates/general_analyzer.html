@@ -14,13 +14,13 @@
 
 <div class="upload-layout">
 
-    <form method="POST" enctype="multipart/form-data" class="card" data-loading>
+    <form method="POST" enctype="multipart/form-data" class="card" data-loading="analysis">
 {{ csrf_field() }}
 
         <div class="field">
-            <label>Resume (PDF, max 5 MB)</label>
+            <label>Resume (PDF or Word, max 5 MB)</label>
             <div class="dropzone">
-                <input type="file" name="resume" accept=".pdf" required>
+                <input type="file" name="resume" accept=".pdf,.docx" required>
                 <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <strong>Drag and drop your resume here</strong>
                 <span class="muted small">or click to browse</span>

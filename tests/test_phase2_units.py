@@ -159,3 +159,10 @@ def test_pdf_has_selectable_text():
 
 def test_pdf_safe():
     assert pdf_safe("“Hi” – ok •  done") == '"Hi" - ok -  done'
+
+
+def test_digits_inside_names_are_not_numbers():
+    for name in ("intern at 42X Academy", "worked at 3M", "Python3 on EC2"):
+        assert remove_invented_numbers(name, "") == (name, False)
+
+    assert remove_invented_numbers("made it 3x faster", "")[0] == "made it [add real number] faster"

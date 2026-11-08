@@ -61,7 +61,9 @@ def remove_invented_numbers(improved, allowed_text):
         return METRIC_PLACEHOLDER
 
     text = re.sub(
-        r"(?<![\w.])(\d+(?:[.,]\d+)?)(\s*(?:%|\+|x|k))?(?![A-Za-z])",
+        # (?!\w): digits inside a name ("42X Academy", "3M") are not numbers,
+        # and the match cannot shrink to just the "4" of "42X"
+        r"(?<![\w.])(\d+(?:[.,]\d+)?)(\s*(?:%|\+|x|k))?(?!\w)",
         replace,
         improved
     )

@@ -1,6 +1,19 @@
 import re
 
 
+# Extra skills known to the whole app (job roles in the database).
+# Filled at start-up and when an admin adds a skill.
+
+REGISTERED_SKILLS = set()
+
+
+def register_skills(names):
+
+    for name in names:
+        if name and name.strip():
+            REGISTERED_SKILLS.add(name.strip())
+
+
 def extract_skills(text, extra_skills=None):
     """
     Finds skills in the resume text.
@@ -167,7 +180,9 @@ def extract_skills(text, extra_skills=None):
 
     ]
 
-    for skill in extra_skills or []:
+    # Skills from the database (added by an admin) are known everywhere
+
+    for skill in list(extra_skills or []) + sorted(REGISTERED_SKILLS):
 
         if skill and skill.lower() not in (s.lower() for s in skills_database):
 

@@ -271,3 +271,38 @@ def test_settings_profile_and_password(client, test_db):
     client.get("/logout")
     response = client.post("/login", data={"email": "settings@test.com", "password": "newpassword1"})
     assert response.headers["Location"].endswith("/dashboard")
+
+
+# ---------------- Highlighted resume and job ----------------
+
+def test_highlight_whole_words_and_aliases():
+    from routes.result_view import highlight
+
+    segments = highlight("Built with JS and Java on K8s", [("JavaScript", "have"), ("Kubernetes", "missing")])
+    marked = [(chunk, kind) for chunk, kind in segments if kind]
+
+    assert marked == [("JS", "have"), ("K8s", "missing")]   # "Java" is not JavaScript
+    assert "".join(chunk for chunk, _ in segments) == "Built with JS and Java on K8s"
+
+
+def test_result_page_shows_highlights(client, test_db):
+    login(client, USER_A)
+
+    jd_id = run_job_match(client, test_db)
+
+    page = client.get(f"/history/jd/{jd_id}").data
+
+    assert b"Your resume and the job, side by side" in page
+    assert b'<mark class="hl-have">Flask</mark>' in page
+    assert b'class="hl-missing"' in page            # Linux is missing in the job text
+
+
+def test_layout_has_theme_toggle_and_step_loader(client, test_db):
+    login(client, USER_A)
+
+    page = client.get("/job-match").data
+
+    assert b"data-theme-toggle" in page
+    assert b'data-loading="analysis"' in page
+    assert b"data-progress-steps" in page
+    assert b"data-shortcuts-dialog" in page

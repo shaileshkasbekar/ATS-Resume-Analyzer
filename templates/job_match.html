@@ -14,7 +14,7 @@
 
 <div class="upload-layout">
 
-    <form method="POST" enctype="multipart/form-data" class="card" data-loading data-mode-form>
+    <form method="POST" enctype="multipart/form-data" class="card" data-loading="analysis" data-mode-form>
         {{ csrf_field() }}
 
         <!-- ============ Step 1: resume ============ -->
@@ -23,9 +23,9 @@
 
         {% if versions %}
         <div class="field">
-            <label for="resume_version_id">Use a saved version or upload a new PDF</label>
+            <label for="resume_version_id">Use a saved version or upload a new file</label>
             <select class="input" id="resume_version_id" name="resume_version_id" data-version-select>
-                <option value="">Upload a new PDF…</option>
+                <option value="">Upload a new file…</option>
                 {% for v in versions %}
                 <option value="{{ v.version_id }}" {% if prefill.resume_version_id == v.version_id %}selected{% endif %}>{{ v.label }} ({{ v.file_name }})</option>
                 {% endfor %}
@@ -34,15 +34,15 @@
         {% endif %}
 
         <div class="field" data-upload-field>
-            <label for="resume-file">Resume PDF</label>
+            <label for="resume-file">Resume file</label>
             <div class="dropzone">
-                <input type="file" id="resume-file" name="resume" accept=".pdf" required aria-describedby="resume-help">
+                <input type="file" id="resume-file" name="resume" accept=".pdf,.docx" required aria-describedby="resume-help">
                 <div class="dropzone-icon" aria-hidden="true"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                 <strong>Drag and drop your resume here</strong>
                 <span class="btn btn-ghost btn-sm" aria-hidden="true">Browse files</span>
                 <span class="dropzone-file" aria-live="polite"></span>
             </div>
-            <span class="field-hint" id="resume-help">PDF only, up to 5 MB. Use a text-based PDF (scanned images cannot be read).</span>
+            <span class="field-hint" id="resume-help">PDF or Word (.docx), up to 5 MB.</span>
         </div>
 
         <div class="form-divider"></div>
@@ -88,8 +88,8 @@
         <div data-mode-panel="file" hidden>
             <div class="field">
                 <label for="jd_file">Job description file</label>
-                <input class="input" type="file" id="jd_file" name="jd_file" accept=".pdf,.txt" required disabled aria-describedby="jdfile-help">
-                <span class="field-hint" id="jdfile-help">PDF or TXT, up to 5 MB.</span>
+                <input class="input" type="file" id="jd_file" name="jd_file" accept=".pdf,.docx,.txt" required disabled aria-describedby="jdfile-help">
+                <span class="field-hint" id="jdfile-help">PDF, Word (.docx) or TXT, up to 5 MB.</span>
             </div>
         </div>
 

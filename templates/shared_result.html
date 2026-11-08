@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% from "_macros.html" import ring, meter, verdict %}
+
+{% block title %}Shared job match report{% endblock %}
+
+{% block body %}
+
+<main class="content" id="main-content" style="max-width: 980px;">
+
+    <div class="page-head">
+        <div>
+            <span class="eyebrow">Shared report · read-only</span>
+            <h1>{{ result.job_title or "Job match" }}{% if result.company %}<span class="muted" style="font-weight: 500;"> · {{ result.company }}</span>{% endif %}</h1>
+            <p>Created {{ created_at.strftime("%d %b %Y") if created_at else "" }} with ATS Resume Analyzer. The owner can turn this link off at any time.</p>
+        </div>
+    </div>
+
+    <div class="stack">
+
+        <div class="card hero">
+            {{ ring(result.score, "Job match") }}
+            <div class="hero-body">
+                <h2>{{ verdict(result.score) }}</h2>
+                <p>An estimate made by this app ({{ result.scoring_version }}), not the score of any employer's ATS.</p>
+                {% for c in result.components if c.applicable %}{{ meter(c.label, c.score) }}{% endfor %}
+            </div>
+        </div>
+
+        {% for title, matches in [("Required skills", result.mandatory), ("Preferred skills", result.preferred)] if matches %}
+        <div class="card">
+            <div class="card-head"><h2>{{ title }}</h2></div>
+            <div class="table-wrap">
+                <table class="req-table">
+                    <thead><tr><th>Requirement</th><th>Result</th><th>Evidence</th></tr></thead>
+                    <tbody>
+                        {% for m in matches %}
+                        <tr>
+                            <td><strong>{{ m.requirement }}</strong></td>
+                            <td>
+                                {% if m.status == "missing" %}<span class="badge tint-low">✗ Missing</span>
+                                {% elif m.evidence in ("experience", "project") %}<span class="badge tint-good">✓ Shown in {{ "work" if m.evidence == "experience" else "a project" }}</span>
+                                {% else %}<span class="badge tint-ok">~ Partial</span>{% endif %}
+                            </td>
+                            <td class="snippet">{% if m.snippet %}<q>{{ m.snippet }}</q>{% else %}—{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if result.actions %}
+        <div class="card">
+            <div class="card-head"><h2>Suggested improvements</h2></div>
+            <ul class="list list-tip">
+                {% for a in result.actions[:6] %}<li><i class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>{{ a.action }}</span></li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+    </div>
+
+</main>
+
+{% endblock %}

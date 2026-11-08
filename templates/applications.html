@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Applications{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Application tracker</span>
+        <h1>Your job applications</h1>
+        <p>Track where you applied, the status, interview dates and which resume version you sent.</p>
+    </div>
+    <a href="/applications/new" class="btn btn-primary"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add application</a>
+</div>
+
+{% if total %}
+
+{% if upcoming %}
+<div class="card continue-card" style="margin-bottom: 18px;">
+    <div class="stat-icon tint-primary" aria-hidden="true"><i class="fa-regular fa-calendar"></i></div>
+    <div class="grow">
+        <p class="section-label" style="margin-bottom: 4px;">Upcoming interviews</p>
+        {% for a in upcoming[:3] %}
+        <div><strong>{{ a.interview_on.strftime("%a %d %b") }}</strong> — {{ a.job_title }} · {{ a.company }}
+            {% if a.interview_on == today %}<span class="badge tint-low">Today</span>{% endif %}</div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="board">
+    {% for column in columns %}
+    <section class="board-column" aria-labelledby="col-{{ column.key }}">
+        <h2 id="col-{{ column.key }}" class="board-title">
+            {{ column.label }} <span class="badge tint-primary">{{ column["items"]|length }}</span>
+        </h2>
+
+        {% for a in column["items"] %}
+        <article class="card board-card">
+            <strong>{{ a.job_title }}</strong>
+            <span class="muted small">{{ a.company }}</span>
+
+            {% if a.applied_on %}<span class="small"><i class="fa-regular fa-paper-plane" aria-hidden="true"></i> Applied {{ a.applied_on.strftime("%d %b %Y") }}</span>{% endif %}
+            {% if a.interview_on %}<span class="small"><i class="fa-regular fa-calendar" aria-hidden="true"></i> Interview {{ a.interview_on.strftime("%d %b %Y") }}</span>{% endif %}
+            {% if a.version_label %}<span class="small"><i class="fa-solid fa-code-branch" aria-hidden="true"></i> {{ a.version_label }}</span>{% endif %}
+            {% if a.notes %}<span class="small muted">{{ a.notes[:90] }}{% if a.notes|length > 90 %}…{% endif %}</span>{% endif %}
+
+            <form method="POST" action="/applications/{{ a.application_id }}/status" class="board-move">
+                {{ csrf_field() }}
+                <label class="sr-only" for="status-{{ a.application_id }}">Move {{ a.job_title }} to</label>
+                <select class="input" id="status-{{ a.application_id }}" name="status">
+                    {% for key, label in statuses %}<option value="{{ key }}" {% if key == a.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn btn-ghost btn-sm">Move</button>
+            </form>
+
+            <div class="actions">
+                <a href="/applications/{{ a.application_id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
+                {% if a.saved_job_id %}<a href="/job-match?job={{ a.saved_job_id }}" class="btn btn-ghost btn-sm">Analyze</a>{% endif %}
+                {% if a.job_url %}<a href="{{ a.job_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" aria-label="Open job posting">Posting <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>{% endif %}
+                <form method="POST" action="/applications/{{ a.application_id }}/delete">
+                    {{ csrf_field() }}
+                    <button type="submit" class="btn btn-danger btn-sm" aria-label="Delete application" data-confirm="Delete the application for {{ a.job_title }} at {{ a.company }}?"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+                </form>
+            </div>
+        </article>
+        {% else %}
+        <p class="empty small">Nothing here.</p>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</div>
+
+{% else %}
+
+<div class="card empty-state">
+    <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
+    <h3>No applications yet</h3>
+    <p>Add the jobs you plan to apply for or have applied to, and move them along as you hear back.</p>
+    <a href="/applications/new" class="btn btn-primary"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add application</a>
+</div>
+
+{% endif %}
+
+{% endblock %}

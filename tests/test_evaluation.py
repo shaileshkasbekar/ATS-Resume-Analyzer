@@ -27,7 +27,7 @@ def test_every_role_skill_is_known_to_the_job_reader(test_db):
     descriptions; otherwise postings asking for it lose that requirement.
     """
 
-    connection = mysql.connector.connect(host=Config.MYSQL_HOST, user=Config.MYSQL_USER,
+    connection = mysql.connector.connect(host=Config.MYSQL_HOST, port=Config.MYSQL_PORT, user=Config.MYSQL_USER,
                                          password=Config.MYSQL_PASSWORD, database=test_db)
     try:
         cursor = connection.cursor()

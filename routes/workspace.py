@@ -15,6 +15,7 @@ from models.repository import _execute, _query, loads
 from routes.auth import MIN_PASSWORD_LENGTH
 from routes.career import roadmap_progress
 from security import login_required, rate_limit
+from tools.reminders import email_configured
 
 
 workspace = Blueprint("workspace", __name__)
@@ -205,9 +206,34 @@ def action_center():
 @login_required
 def settings():
 
-    user = _query("SELECT full_name, email, created_at FROM users WHERE user_id = %s", (session["user_id"],), one=True)
+    has_reminders = "reminders_enabled" in repository.columns_of("users")
 
-    return render_template("settings.html", user=user)
+    user = _query(
+        "SELECT full_name, email, created_at"
+        + (", reminders_enabled" if has_reminders else "")
+        + " FROM users WHERE user_id = %s",
+        (session["user_id"],), one=True
+    )
+
+    return render_template("settings.html", user=user, has_reminders=has_reminders,
+                           email_ready=email_configured())
+
+
+@workspace.route("/settings/reminders", methods=["POST"])
+@login_required
+def update_reminders():
+
+    if "reminders_enabled" not in repository.columns_of("users"):
+        flash("Run the database upgrade (database/upgrade_v6.sql) to use reminders.", "warning")
+        return redirect("/settings")
+
+    enabled = bool(request.form.get("reminders_enabled"))
+
+    _execute("UPDATE users SET reminders_enabled = %s WHERE user_id = %s", (enabled, session["user_id"]))
+
+    flash("Weekly roadmap reminders turned " + ("on." if enabled else "off."), "success")
+
+    return redirect("/settings")
 
 
 @workspace.route("/settings/profile", methods=["POST"])

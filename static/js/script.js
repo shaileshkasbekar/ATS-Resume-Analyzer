@@ -193,12 +193,46 @@ document.addEventListener("DOMContentLoaded", function () {
     // -----------------------------------------
 
     var overlay = document.getElementById("loading-overlay");
+    var stepTimer = null;
+
+    function showLoader(kind) {
+        if (!overlay) { return; }
+
+        var steps = overlay.querySelector("[data-progress-steps]");
+        var title = overlay.querySelector("[data-loading-title]");
+        var note = overlay.querySelector("[data-loading-note]");
+        var analysis = kind === "analysis";
+
+        title.textContent = analysis ? "Analyzing your resume…" : "Working on it…";
+        note.textContent = analysis
+            ? "Usually 10–30 seconds. Steps are shown by typical timing; the last step can take longest."
+            : "This can take up to a minute.";
+        steps.hidden = !analysis;
+
+        if (analysis) {
+            var items = steps.querySelectorAll("li");
+            var current = 0;
+
+            function mark() {
+                items.forEach(function (li, i) {
+                    li.className = i < current ? "done" : (i === current ? "current" : "");
+                    li.setAttribute("aria-current", i === current ? "step" : "false");
+                });
+            }
+
+            mark();
+            clearInterval(stepTimer);
+            stepTimer = setInterval(function () {
+                if (current < items.length - 1) { current++; mark(); }
+            }, 3500);
+        }
+
+        overlay.hidden = false;
+    }
 
     document.querySelectorAll("form[data-loading]").forEach(function (form) {
         form.addEventListener("submit", function () {
-            if (overlay) {
-                overlay.hidden = false;
-            }
+            showLoader(form.getAttribute("data-loading"));
 
             var button = form.querySelector("button[type=submit]");
 
@@ -210,6 +244,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Hide it again if the user comes back with the browser Back button
     window.addEventListener("pageshow", function () {
+        clearInterval(stepTimer);
+
         if (overlay) {
             overlay.hidden = true;
         }
@@ -217,6 +253,125 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll("form[data-loading] button[type=submit]").forEach(function (button) {
             button.disabled = false;
         });
+    });
+
+
+    // -----------------------------------------
+    // Theme: System -> Light -> Dark (saved in this browser)
+    // -----------------------------------------
+
+    var THEMES = ["system", "light", "dark"];
+    var THEME_NAMES = { system: "System", light: "Light", dark: "Dark" };
+
+    function storedTheme() {
+        try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
+    }
+
+    function applyTheme(theme) {
+        if (theme === "system") {
+            document.documentElement.removeAttribute("data-theme");
+        } else {
+            document.documentElement.setAttribute("data-theme", theme);
+        }
+
+        document.querySelectorAll("[data-theme-label]").forEach(function (label) {
+            label.textContent = "Theme: " + THEME_NAMES[theme];
+        });
+    }
+
+    applyTheme(storedTheme());
+
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            var next = THEMES[(THEMES.indexOf(storedTheme()) + 1) % THEMES.length];
+
+            try { localStorage.setItem("theme", next); } catch (e) {}
+
+            applyTheme(next);
+
+            // Charts read their colours once; redraw them in the new theme
+            if (document.querySelector("canvas[data-chart]")) { window.location.reload(); }
+        });
+    });
+
+
+    // -----------------------------------------
+    // Toast messages: success / warning fade away,
+    // errors stay until closed
+    // -----------------------------------------
+
+    document.querySelectorAll(".content > .flashes .flash").forEach(function (toast, i) {
+        if (toast.classList.contains("flash-danger")) { return; }
+
+        setTimeout(function () {
+            toast.classList.add("leaving");
+            setTimeout(function () { toast.remove(); }, 400);
+        }, 6000 + i * 800);
+    });
+
+
+    // -----------------------------------------
+    // Back to top
+    // -----------------------------------------
+
+    var topButton = document.querySelector("[data-back-to-top]");
+
+    if (topButton) {
+        window.addEventListener("scroll", function () {
+            topButton.hidden = window.scrollY < 700;
+        }, { passive: true });
+
+        topButton.addEventListener("click", function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            var main = document.getElementById("main-content");
+            if (main) { main.focus({ preventScroll: true }); }
+        });
+    }
+
+
+    // -----------------------------------------
+    // Keyboard shortcuts (can be turned off in Settings)
+    // -----------------------------------------
+
+    function shortcutsOn() {
+        try { return localStorage.getItem("shortcuts") !== "off"; } catch (e) { return true; }
+    }
+
+    var shortcutSetting = document.querySelector("[data-shortcuts-setting]");
+
+    if (shortcutSetting) {
+        shortcutSetting.checked = shortcutsOn();
+        shortcutSetting.addEventListener("change", function () {
+            try { localStorage.setItem("shortcuts", shortcutSetting.checked ? "on" : "off"); } catch (e) {}
+        });
+    }
+
+    var shortcutsDialog = document.querySelector("[data-shortcuts-dialog]");
+
+    if (shortcutsDialog) {
+        shortcutsDialog.querySelector("[data-close-dialog]").addEventListener("click", function () { shortcutsDialog.close(); });
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (!shortcutsOn() || event.ctrlKey || event.metaKey || event.altKey) { return; }
+
+        var target = event.target;
+        var typing = target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+
+        if (typing || document.querySelector("dialog[open]") || !document.querySelector(".sidebar")) { return; }
+
+        var routes = { n: "/job-match", d: "/dashboard", a: "/action-center" };
+
+        if (routes[event.key]) {
+            event.preventDefault();
+            window.location.href = routes[event.key];
+        } else if (event.key === "/") {
+            var search = document.querySelector("input[type=search]");
+            if (search) { event.preventDefault(); search.focus(); }
+        } else if (event.key === "?" && shortcutsDialog && shortcutsDialog.showModal) {
+            event.preventDefault();
+            shortcutsDialog.showModal();
+        }
     });
 
 
@@ -606,6 +761,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }, set);
             });
 
+            canvas.parentElement.classList.add("ready");
+
             new Chart(canvas, {
                 type: type,
                 data: { labels: data.labels, datasets: datasets },
@@ -648,7 +805,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            navigator.clipboard.writeText(target.textContent.trim()).then(function () {
+            // Inputs and text boxes: copy what the user typed
+            var text = "value" in target ? target.value : target.textContent;
+
+            navigator.clipboard.writeText(text.trim()).then(function () {
                 var original = button.innerHTML;
                 button.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
                 setTimeout(function () {

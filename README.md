@@ -59,6 +59,18 @@ It combines a **rule-based scoring engine** (skill matching, weights, technology
 - History with search, filters (type, role/job), sorting and pagination
 - Professional **PDF reports** for every analysis and the learning roadmap
 
+### 🧾 Applications, writing tools and sharing
+- **Application tracker:** board with To apply / Applied / Interview / Offer / Rejected, dates, notes, link to the posting and the resume version you sent; upcoming interviews shown on top
+- **Cover letter and LinkedIn writer:** drafts built only from your resume; sentences that claim skills you don't have are removed and invented numbers become [add real number]
+- **Share link:** a read-only link to one report for a mentor or teacher; the owner can turn it off anytime
+- **Weekly email reminders** for open roadmap tasks (opt-in in Settings; needs SMTP settings, see `tools/reminders.py`)
+- **Admin page** (emails listed in `ADMIN_EMAILS`): add roles, skill groups and skills from the browser
+
+### 🖥️ Files and interface
+- Resumes and job descriptions as **PDF or Word (.docx)**; scanned PDFs are read with OCR when Tesseract is installed
+- Your resume and the job description side by side, with matched / partial / missing skills highlighted
+- Light / dark / system theme switch, toast messages, step-by-step progress while analysing, keyboard shortcuts (press `?`)
+
 ### 🔒 Security
 - Password hashing, login rate limiting, CSRF protection on every form, secure session cookies
 - Every record is checked against the logged-in user; resumes are stored outside the public folder
@@ -161,6 +173,7 @@ ATS_Resume_Analyzer/
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v3.sql
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v4.sql
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v5.sql
+   venv\Scripts\python.exe database\run_sql.py database\upgrade_v6.sql
    ```
 
 4. **Run**
@@ -182,7 +195,7 @@ venv\Scripts\python.exe -m evaluation.evaluate
 Runs the Job Match engine (rule-based, no AI) on hand-labelled cases in `evaluation/cases.py`
 (aliases, look-alike names, "or" choices, preferred markers, listed-only skills) and reports
 requirement-extraction precision/recall, matched/missing accuracy and evidence accuracy.
-Current result: 100% on all measures for 8 cases / 40 requirements. The set is small and
+Current result: 100% on all measures for 20 cases / 104 requirements. The set is small and
 synthetic: it measures known traps, not accuracy on every real resume.
 
 ## Consistent scores (AI answer cache)
@@ -201,6 +214,12 @@ venv\Scripts\python.exe -m pytest tests
 
 AI calls are replaced by fakes, and route tests run on a temporary MySQL database
 that is created and deleted automatically (your real data is never touched).
+
+---
+
+## Putting it online
+
+See [DEPLOY.md](DEPLOY.md) (Railway: app + MySQL, `gunicorn wsgi:app`).
 
 ---
 

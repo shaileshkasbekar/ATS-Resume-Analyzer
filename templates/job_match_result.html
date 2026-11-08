@@ -215,6 +215,14 @@
                 <h3><i class="fa-solid fa-rotate" style="color: var(--primary);" aria-hidden="true"></i> Reanalyze</h3>
                 <p class="muted small">Same job, updated resume</p>
             </a>
+            <a href="/write/{{ jd_result_id }}" class="group action-card">
+                <h3><i class="fa-solid fa-envelope-open-text" style="color: var(--primary);" aria-hidden="true"></i> Cover letter &amp; LinkedIn</h3>
+                <p class="muted small">Drafts written only from your resume</p>
+            </a>
+            <a href="/applications/new" class="group action-card">
+                <h3><i class="fa-solid fa-briefcase" style="color: var(--primary);" aria-hidden="true"></i> Track this application</h3>
+                <p class="muted small">Add it to your application tracker</p>
+            </a>
         </div>
     </section>
     {% endif %}
@@ -287,6 +295,40 @@
         {% endif %}
 
     </section>
+    {% endif %}
+
+
+    <!-- ================= HIGHLIGHTED RESUME AND JOB ================= -->
+
+    {% set resume_hl, job_hl = highlights %}
+    {% if resume_hl or job_hl %}
+    <details class="card expand" id="highlights" style="padding: 0;">
+        <summary style="padding: 18px 22px;">
+            <i class="fa-solid fa-highlighter" style="color: var(--primary);" aria-hidden="true"></i>
+            Your resume and the job, side by side
+        </summary>
+        <div style="padding: 0 22px 18px;">
+            <p class="hl-legend small">
+                <mark class="hl-have">✓ shown</mark>
+                <mark class="hl-partial">~ only listed / by meaning</mark>
+                <mark class="hl-missing">✗ missing from your resume</mark>
+            </p>
+            <div class="compare-cols">
+                {% if resume_hl %}
+                <div>
+                    <p class="section-label">Your resume</p>
+                    <div class="hl-text">{% for chunk, kind in resume_hl %}{% if kind %}<mark class="hl-{{ kind }}">{{ chunk }}</mark>{% else %}{{ chunk }}{% endif %}{% endfor %}</div>
+                </div>
+                {% endif %}
+                {% if job_hl %}
+                <div>
+                    <p class="section-label">Job description</p>
+                    <div class="hl-text">{% for chunk, kind in job_hl %}{% if kind %}<mark class="hl-{{ kind }}" title="{{ {'have': 'Shown in your resume', 'partial': 'Only listed or matched by meaning', 'missing': 'Missing from your resume'}[kind] }}">{{ chunk }}</mark>{% else %}{{ chunk }}{% endif %}{% endfor %}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </details>
     {% endif %}
 
 
@@ -425,6 +467,33 @@
             {% endif %}
         </div>
     </details>
+
+
+    <!-- ================= SHARE ================= -->
+
+    {% if share_enabled and jd_result_id %}
+    <section class="card" id="share" aria-labelledby="share-title">
+        <div class="card-head"><h2 id="share-title"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share this report</h2></div>
+        {% if share_token %}
+        <p class="small">Anyone with this link can view the report (scores, requirements and resume lines). They cannot see your file, your other analyses or edit anything.</p>
+        <div class="actions" style="margin-top: 10px;">
+            <input class="input" id="share-link" readonly value="{{ request.host_url.rstrip('/') }}/shared/{{ share_token }}" style="flex: 1 1 320px;" aria-label="Share link">
+            <button type="button" class="btn btn-ghost btn-sm" data-copy="#share-link"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy link</button>
+            <form method="POST" action="/share/{{ jd_result_id }}">
+                {{ csrf_field() }}
+                <input type="hidden" name="action" value="off">
+                <button type="submit" class="btn btn-danger btn-sm">Turn off sharing</button>
+            </form>
+        </div>
+        {% else %}
+        <p class="small muted">Create a read-only link to send this report to a mentor or teacher. You can turn it off anytime.</p>
+        <form method="POST" action="/share/{{ jd_result_id }}" style="margin-top: 10px;">
+            {{ csrf_field() }}
+            <button type="submit" class="btn btn-ghost btn-sm"><i class="fa-solid fa-link" aria-hidden="true"></i> Create share link</button>
+        </form>
+        {% endif %}
+    </section>
+    {% endif %}
 
 
     <!-- ================= LEARNING PLAN ================= -->

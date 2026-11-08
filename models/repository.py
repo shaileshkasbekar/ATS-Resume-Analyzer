@@ -9,7 +9,7 @@ import json
 import os
 
 from models.database import get_db_connection, table_columns
-from resume_parser.pdf_reader import extract_text_from_pdf
+from resume_parser.document_reader import extract_text
 
 
 def _query(sql, params=(), one=False):
@@ -124,7 +124,7 @@ def resume_text_for(row):
     path = row.get("file_path")
 
     if path and os.path.exists(path):
-        return extract_text_from_pdf(path)
+        return extract_text(path)
 
     return ""
 

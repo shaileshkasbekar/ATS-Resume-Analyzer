@@ -28,7 +28,7 @@ def post_job_match(client, **fields):
 def latest_jd_result(test_db):
 
     connection = mysql.connector.connect(
-        host=Config.MYSQL_HOST, user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD, database=test_db
+        host=Config.MYSQL_HOST, port=Config.MYSQL_PORT, user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD, database=test_db
     )
     cursor = connection.cursor(dictionary=True)
     cursor.execute(
@@ -57,10 +57,16 @@ def test_short_job_description_rejected(client):
     assert b"too short" in response.data
 
 
-def test_resume_must_be_pdf(client):
+def test_resume_must_be_pdf_or_word(client):
+    login(client, USER_A)
+    response = post_job_match(client, resume=(io.BytesIO(b"hello"), "resume.txt"))
+    assert b"PDF or Word" in response.data
+
+
+def test_renamed_file_is_rejected(client):
     login(client, USER_A)
     response = post_job_match(client, resume=(io.BytesIO(b"hello"), "resume.docx"))
-    assert b"Only PDF resumes" in response.data
+    assert b"not a real PDF / Word file" in response.data
 
 
 def test_malformed_resume_pdf(client):
@@ -71,8 +77,8 @@ def test_malformed_resume_pdf(client):
 
 def test_job_description_file_type(client):
     login(client, USER_A)
-    response = post_job_match(client, mode="file", jd_file=(io.BytesIO(b"x" * 200), "job.docx"))
-    assert b"must be a PDF or TXT" in response.data
+    response = post_job_match(client, mode="file", jd_file=(io.BytesIO(b"x" * 200), "job.rtf"))
+    assert b"must be a PDF, Word (.docx) or TXT" in response.data
 
 
 def test_invalid_mode(client):

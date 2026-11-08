@@ -168,3 +168,8 @@ Java, Git""",
         "missing": [],
     },
 ]
+
+
+from evaluation.cases_more import MORE_CASES  # noqa: E402
+
+CASES = CASES + MORE_CASES

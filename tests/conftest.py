@@ -168,7 +168,7 @@ def test_db():
 
     try:
         connection = mysql.connector.connect(
-            host=Config.MYSQL_HOST, user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD
+            host=Config.MYSQL_HOST, port=Config.MYSQL_PORT, user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD
         )
     except mysql.connector.Error:
         pytest.skip("MySQL is not reachable")
@@ -179,7 +179,7 @@ def test_db():
 
         cursor.execute(f"CREATE DATABASE {name}")
 
-        for path in ["database/schema.sql", "database/upgrade_v3.sql", "database/upgrade_v4.sql", "database/upgrade_v5.sql"]:
+        for path in ["database/schema.sql", "database/upgrade_v3.sql", "database/upgrade_v4.sql", "database/upgrade_v5.sql", "database/upgrade_v6.sql"]:
 
             sql = open(path, encoding="utf-8").read().replace("ats_resume_analyzer_v2", name)
 
