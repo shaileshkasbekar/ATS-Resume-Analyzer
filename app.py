@@ -20,6 +20,7 @@ from routes.workspace import workspace
 from routes.applications import applications
 from routes.writer import writer
 from routes.admin import admin, is_admin, load_registered_skills
+from routes.agent import agent
 
 
 app = Flask(__name__)
@@ -35,7 +36,7 @@ init_security(app)
 
 for blueprint in (auth, upload, dashboard, history, general_analyzer, job_match,
                   assistant, reports, versions, jobs, career, workspace,
-                  applications, writer, admin):
+                  applications, writer, admin, agent):
     app.register_blueprint(blueprint)
 
 
@@ -107,6 +108,7 @@ def robots():
         "Disallow: /shared/",
         "Disallow: /history",
         "Disallow: /report/",
+        "Disallow: /agent",
         f"Sitemap: {site_url()}/sitemap.xml",
     ]
 

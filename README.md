@@ -13,6 +13,18 @@ It combines a **rule-based scoring engine** (skill matching, weights, technology
 
 ## Features
 
+### 🤖 Career Agent (Agentic AI)
+- Type a goal ("How well do I match this job and what should I learn first?") and a **LangGraph** workflow takes over:
+  load memory → **planner** decides which agents are needed → agents run → final answer → save memory
+- Five specialist agents: **Resume Analysis, Job Matching, Skill Gap Analysis, Resume Improvement, Career Roadmap**
+- Each agent is a **Groq function-calling loop**: the LLM chooses tools, reads the results, fixes its own mistakes
+  (e.g. runs a job match when a tool says one is needed) and decides when it is done (max 6 steps)
+- 16 tools wrap the existing tested engines, so scores still come from the rule engine, never from the LLM
+- **Long-term memory** per user (target role, skills, gaps, goal) is recalled in the next run
+- **Execution trace**: every planner decision, LLM decision and tool call (input, output, time, errors) is saved and shown
+- Works without AI too: the same tools run in a fixed order, so the user still gets results
+- Code: `agents/` (tools, llm loop, specialists, graph, memory, tracking), page: `/agent`, tables: `database/upgrade_v7.sql`
+
 ### 🎯 ATS analysis for a job role
 - 11 job roles (Backend, Frontend, Full Stack, Java, Python, Data Analyst, Data Scientist, ML Engineer, DevOps, Android, Software Tester)
 - **Technology paths**: a Java backend developer is not penalized for not knowing Node.js — the engine detects the candidate's strongest path and scores against it
@@ -105,7 +117,8 @@ If the AI is unavailable, the app still works and shows the rule-based score.
 | Backend   | Python, Flask (blueprints) |
 | Database  | MySQL (`mysql-connector-python`) |
 | PDF       | PyMuPDF |
-| AI        | Groq API (`openai/gpt-oss-20b`) |
+| AI        | Groq API (`openai/gpt-oss-20b`), function calling |
+| Agents    | LangGraph (workflow), own tool-calling loop, MySQL memory |
 | Frontend  | Jinja2 templates, CSS (no framework), vanilla JavaScript |
 
 ---
@@ -174,6 +187,7 @@ ATS_Resume_Analyzer/
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v4.sql
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v5.sql
    venv\Scripts\python.exe database\run_sql.py database\upgrade_v6.sql
+   venv\Scripts\python.exe database\run_sql.py database\upgrade_v7.sql
    ```
 
 4. **Run**

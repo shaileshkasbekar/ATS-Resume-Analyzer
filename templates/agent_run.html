@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Career Agent run{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Career Agent run">
+{% if running %}<meta http-equiv="refresh" content="3">{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% set status_tint = {'done': 'good', 'running': 'info', 'failed': 'low'} %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Career Agent run</span>
+        <h1>{{ run.goal|truncate(110) }}</h1>
+        <p><span class="badge tint-{{ status_tint.get(run.status, 'info') }}">{{ run.status }}</span>
+           <span class="muted small">{{ steps|length }} steps · {{ (total_ms / 1000)|round(1) }} s of agent work</span></p>
+    </div>
+    <div class="actions">
+        <a href="/agent" class="btn btn-ghost"><i class="fa-solid fa-plus" aria-hidden="true"></i> New run</a>
+        {% if not running %}
+        <form method="POST" action="/agent/run/{{ run.run_id }}/delete">
+            {{ csrf_field() }}
+            <button type="submit" class="btn btn-danger" data-confirm="Delete this agent run?"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="stack">
+
+    <!-- ===== Plan: which agents the planner chose ===== -->
+
+    <section class="card" aria-labelledby="plan-title">
+        <div class="card-head"><h2 id="plan-title"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i> The plan</h2></div>
+        {% if plan %}
+        <div class="chips">
+            {% for name in plan %}
+            {% set done = result.reports and (result.reports|selectattr("agent", "equalto", name)|list) %}
+            <span class="chip {{ 'chip-good' if done else 'chip-info' }}">
+                <i class="fa-solid {{ specialists[name].icon }}" aria-hidden="true"></i> {{ loop.index }}. {{ specialists[name].title }}
+            </span>
+            {% endfor %}
+        </div>
+        {% if result.plan_reason %}<p class="muted small" style="margin-top: 8px;">Why: {{ result.plan_reason }}</p>{% endif %}
+        {% else %}
+        <p class="muted">The planner is reading your goal…</p>
+        {% endif %}
+    </section>
+
+    {% if running %}
+    <div class="card" role="status">
+        <p><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> <strong>The agents are working.</strong>
+           This page refreshes every 3 seconds. Steps appear below as they happen.</p>
+    </div>
+    {% endif %}
+
+    {% if run.status == "failed" %}
+    <div class="flash flash-danger"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> <span>{{ run.error or "The run failed." }} Any results found before the error are shown below.</span></div>
+    {% endif %}
+
+    <!-- ===== Final answer ===== -->
+
+    {% if result.answer %}
+    <section class="card" aria-labelledby="answer-title">
+        <div class="card-head"><h2 id="answer-title"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i> The agent's answer</h2></div>
+        <div style="white-space: pre-line;">{{ result.answer }}</div>
+        {% if result.next_steps %}
+        <h3 style="margin-top: 14px;">Next steps</h3>
+        <ol style="margin: 6px 0 0 20px;">
+            {% for s in result.next_steps %}<li style="margin-bottom: 4px;">{{ s }}</li>{% endfor %}
+        </ol>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- ===== Results produced by the tools ===== -->
+
+    {% if artifacts.match %}
+    {% set m = artifacts.match %}
+    <section class="card" aria-labelledby="match-title">
+        <div class="card-head"><h2 id="match-title"><i class="fa-solid fa-handshake" aria-hidden="true"></i> Job match: {{ m.job_title }}</h2>
+            <span class="badge tint-{{ 'good' if m.score >= 75 else ('ok' if m.score >= 50 else 'low') }}">{{ m.score|round|int }}%</span></div>
+        <div class="grid grid-2">
+            <div>
+                <h3>Required</h3>
+                <div class="chips" style="margin-top: 6px;">
+                    {% for r in m.required %}
+                    <span class="chip {{ 'chip-low' if r.status == 'missing' else ('chip-info' if r.evidence in ('listed', 'mentioned') else 'chip-good') }}">{{ r.requirement }}{% if r.status == 'missing' %} · missing{% elif r.evidence in ('listed', 'mentioned') %} · only listed{% endif %}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <h3>Preferred</h3>
+                <div class="chips" style="margin-top: 6px;">
+                    {% for r in m.preferred %}
+                    <span class="chip {{ 'chip-low' if r.status == 'missing' else 'chip-good' }}">{{ r.requirement }}{% if r.status == 'missing' %} · missing{% endif %}</span>
+                    {% else %}<span class="muted small">None asked.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <ul class="list" style="margin-top: 10px;">
+            {% for part in m.score_parts %}<li><span><strong>{{ part.part }}: {{ part.score|round|int }}%</strong> <span class="muted small">{{ part.explanation }}</span></span></li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if artifacts.role_fit %}
+    <section class="card" aria-labelledby="fit-title">
+        <div class="card-head"><h2 id="fit-title"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Best-fitting roles</h2></div>
+        <ul class="list">
+            {% for r in artifacts.role_fit %}<li><span style="flex: 1;">{{ r.role }}</span> <strong>{{ r.score|round|int }}%</strong></li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if artifacts.profile or artifacts.quality %}
+    <div class="grid grid-2">
+        {% if artifacts.profile %}
+        {% set p = artifacts.profile %}
+        <section class="card" aria-labelledby="profile-title">
+            <div class="card-head"><h2 id="profile-title"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Your profile</h2>
+                <span class="badge tint-info">{{ p.experience_level }}</span></div>
+            <p class="small"><strong>Shown in projects / work:</strong> {{ p.skills_used_in_projects_or_work|join(", ") or "—" }}</p>
+            <p class="small" style="margin-top: 6px;"><strong>Only listed:</strong> {{ p.skills_only_listed|join(", ") or "—" }}</p>
+            {% if p.education %}<p class="small" style="margin-top: 6px;"><strong>Education:</strong> {{ p.education|join(" · ") }}</p>{% endif %}
+            {% if p.sections_missing %}<p class="small muted" style="margin-top: 6px;">Sections not found: {{ p.sections_missing|join(", ") }}</p>{% endif %}
+        </section>
+        {% endif %}
+        {% if artifacts.quality %}
+        {% set q = artifacts.quality %}
+        <section class="card" aria-labelledby="quality-title">
+            <div class="card-head"><h2 id="quality-title"><i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i> Resume quality</h2>
+                <span class="badge tint-{{ 'good' if q.quality_score >= 75 else 'ok' }}">{{ q.quality_score|round|int }}/100</span></div>
+            <ul class="list">
+                {% for i in q.confirmed_issues %}<li><i class="fa-solid fa-circle-exclamation" style="color: var(--low);" aria-hidden="true"></i><span class="small">{{ i }}</span></li>{% endfor %}
+                {% for i in q.recommendations[:4] %}<li><i class="fa-solid fa-lightbulb" style="color: var(--ok);" aria-hidden="true"></i><span class="small">{{ i }}</span></li>{% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if artifacts.gaps %}
+    <section class="card" aria-labelledby="gaps-title">
+        <div class="card-head"><h2 id="gaps-title"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Skill gaps, most important first</h2></div>
+        <ul class="list">
+            {% for g in artifacts.gaps %}
+            <li><span class="badge tint-{{ {'high': 'low', 'medium': 'ok', 'low': 'info'}[g.priority] }}">{{ g.priority }}</span>
+                <span><strong>{{ g.skill }}</strong> <span class="muted small">{{ g.why }}</span></span></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if artifacts.resources %}
+    <section class="card" aria-labelledby="res-title">
+        <div class="card-head"><h2 id="res-title"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Learning resources</h2></div>
+        <ul class="list">
+            {% for r in artifacts.resources %}
+            <li><span><strong>{{ r.skill }}</strong> <span class="muted small">· {{ r.time }}</span><br>
+                {% if r.url and r.url.startswith("http") %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.resource }}</a>{% else %}{{ r.resource }}{% endif %}
+                {% if r.practice_project %}<br><span class="muted small">Practice: {{ r.practice_project }}</span>{% endif %}</span></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if artifacts.suggestions %}
+    <section class="card" aria-labelledby="sug-title">
+        <div class="card-head"><h2 id="sug-title"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Resume improvements</h2></div>
+        <div class="stack">
+            {% for s in artifacts.suggestions %}
+            <div>
+                <span class="badge tint-info">{{ s.type }}</span>
+                {% if s.original %}<p class="small muted" style="margin-top: 6px;"><strong>Now:</strong> {{ s.original }}</p>{% endif %}
+                <p class="small" style="margin-top: 4px;"><strong>Better:</strong> {{ s.improved }}</p>
+                {% if s.reason %}<p class="small muted" style="margin-top: 4px;">Why: {{ s.reason }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if artifacts.keywords %}
+    {% set k = artifacts.keywords %}
+    <section class="card" aria-labelledby="kw-title">
+        <div class="card-head"><h2 id="kw-title"><i class="fa-solid fa-key" aria-hidden="true"></i> ATS keywords</h2></div>
+        {% if k.add_only_if_you_really_have_it %}
+        <p class="small"><strong>Add only if you really have it:</strong></p>
+        <div class="chips" style="margin: 6px 0 10px;">{% for x in k.add_only_if_you_really_have_it %}<span class="chip chip-low">{{ x.keyword }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if k.move_from_skills_list_into_project_bullets %}
+        <p class="small"><strong>Move from your skills list into a project bullet:</strong></p>
+        <div class="chips" style="margin: 6px 0 10px;">{% for x in k.move_from_skills_list_into_project_bullets %}<span class="chip chip-info">{{ x }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if k.use_the_exact_job_wording %}
+        <p class="small"><strong>Use the job's exact wording:</strong></p>
+        <div class="chips" style="margin: 6px 0 10px;">{% for x in k.use_the_exact_job_wording %}<span class="chip chip-primary">{{ x }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if k.soft_skills_to_show_with_examples %}
+        <p class="small"><strong>Soft skills to show with an example:</strong> {{ k.soft_skills_to_show_with_examples|join(", ") }}</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% if artifacts.roadmap %}
+    <section class="card" aria-labelledby="road-title">
+        <div class="card-head"><h2 id="road-title"><i class="fa-solid fa-route" aria-hidden="true"></i> Your learning roadmap</h2></div>
+        <ol style="margin-left: 20px;">
+            {% for r in artifacts.roadmap %}
+            <li style="margin-bottom: 10px;"><strong>{{ r.skill }}</strong> <span class="muted small">· {{ r.priority }} priority{% if r.time %} · {{ r.time }}{% endif %}</span>
+                <div class="small">{{ r.why }}</div>
+                {% if r.objectives %}<div class="small muted">Goals: {{ r.objectives|join("; ") }}</div>{% endif %}
+                {% if r.url and r.url.startswith("http") %}<div class="small"><a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.resource }}</a></div>{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </section>
+    {% endif %}
+
+    {% if artifacts.projects %}
+    <section class="card" aria-labelledby="proj-title">
+        <div class="card-head"><h2 id="proj-title"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Project ideas</h2></div>
+        <div class="grid grid-3">
+            {% for p in artifacts.projects %}
+            <div>
+                <h3>{{ p.title }}</h3>
+                <p class="small muted" style="margin-top: 4px;">{{ p.objective }}</p>
+                {% if p.stack %}<div class="chips" style="margin-top: 6px;">{% for s in p.stack %}<span class="chip">{{ s }}</span>{% endfor %}</div>{% endif %}
+                {% if p.relevance %}<p class="small" style="margin-top: 6px;">{{ p.relevance }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ===== What each agent did ===== -->
+
+    {% if result.reports %}
+    <section class="card" aria-labelledby="reports-title">
+        <div class="card-head"><h2 id="reports-title"><i class="fa-solid fa-users-gear" aria-hidden="true"></i> What each agent did</h2></div>
+        <div class="stack">
+            {% for r in result.reports %}
+            <div>
+                <h3><i class="fa-solid {{ specialists[r.agent].icon }}" style="color: var(--primary);" aria-hidden="true"></i> {{ specialists[r.agent].title }}
+                    {% if not r.ok %}<span class="badge tint-low">problem</span>{% endif %}</h3>
+                <div class="chips" style="margin-top: 6px;">
+                    {% for t in r.tools_used %}<span class="chip chip-primary"><i class="fa-solid fa-wrench" aria-hidden="true"></i> {{ t }}</span>{% else %}<span class="muted small">No tools used.</span>{% endfor %}
+                </div>
+                {% if r.summary %}<div class="small" style="white-space: pre-line; margin-top: 6px;">{{ r.summary }}</div>{% endif %}
+                {% if r.error %}<p class="small muted" style="margin-top: 4px;">Note: {{ r.error|truncate(200) }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ===== Execution trace ===== -->
+
+    <!-- Hidden by default (for demos and debugging); open while the agents are working so progress is visible -->
+    <section class="card" aria-labelledby="trace-title">
+        <details {% if running %}open{% endif %}>
+        <summary style="cursor: pointer; list-style-position: inside;">
+            <h2 id="trace-title" style="display: inline;"><i class="fa-solid fa-list-ol" aria-hidden="true"></i> Show how the agent worked</h2>
+            <span class="muted small">({{ steps|length }} steps)</span>
+        </summary>
+        <p class="muted small" style="margin-top: 10px;">Every planner decision, LLM decision and tool call, in order. Open a row to see the exact input and output.</p>
+        <div class="stack" style="margin-top: 10px; gap: 6px;">
+            {% for s in steps %}
+            <details class="expand">
+                <summary>
+                    <span class="muted small">#{{ s.step_no }}</span>
+                    <span class="badge tint-{{ 'low' if not s.ok else {'tool': 'good', 'llm': 'info', 'plan': 'ok', 'final': 'good'}.get(s.kind, 'info') }}">{{ s.kind }}</span>
+                    {{ specialists[s.agent].title if s.agent in specialists else s.agent|capitalize }} →
+                    <strong>{{ s.name }}</strong>
+                    <span class="muted small">{{ s.duration_ms }} ms{% if not s.ok %} · error{% endif %}</span>
+                </summary>
+                <div class="expand-body">
+                    {% if s.input_data %}<p class="small"><strong>Input</strong></p><pre class="small" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ pretty(s.input_data) }}</pre>{% endif %}
+                    {% if s.output_data %}<p class="small" style="margin-top: 6px;"><strong>Output</strong></p><pre class="small" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ pretty(s.output_data) }}</pre>{% endif %}
+                </div>
+            </details>
+            {% else %}
+            <p class="muted small">No steps yet.</p>
+            {% endfor %}
+        </div>
+        </details>
+    </section>
+
+</div>
+
+{% endblock %}

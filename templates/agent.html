@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Career Agent{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Agentic AI</span>
+        <h1>Career Agent</h1>
+        <p>Tell the agent your goal. A planner decides which specialist agents are needed, and each agent chooses its own tools step by step. You can see every decision afterwards.</p>
+    </div>
+</div>
+
+{% if not ready %}
+
+<div class="card">
+    <h2>One-time setup needed</h2>
+    <p class="muted" style="margin-top: 6px;">Run the database upgrade to add the agent tables (your existing data is not changed):</p>
+    <pre class="small" style="margin-top: 10px; white-space: pre-wrap;">venv\Scripts\python.exe database\run_sql.py database\upgrade_v7.sql</pre>
+</div>
+
+{% else %}
+
+<div class="grid grid-2" style="align-items: start;">
+
+    <form method="POST" enctype="multipart/form-data" class="card">
+
+        {{ csrf_field() }}
+
+        <div class="form-step"><span class="num">1</span> Your goal</div>
+
+        <div class="field">
+            <label for="goal">What do you want to achieve?</label>
+            <textarea class="input" id="goal" name="goal" rows="3" minlength="5" maxlength="1000" required
+                      placeholder="Example: I want a backend developer job. What am I missing and what should I learn first?">{{ goal }}</textarea>
+            <div class="chips" style="margin-top: 8px;">
+                {% for preset in presets %}
+                <a class="chip" href="/agent?goal={{ preset|urlencode }}">{{ preset }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="form-step"><span class="num">2</span> Your resume</div>
+
+        <div class="field">
+            <label for="resume_source">Use a saved resume or upload a file</label>
+            <select class="input" id="resume_source" name="resume_source">
+                <option value="upload">Upload a new file (below)</option>
+                {% if versions %}
+                <optgroup label="Resume versions">
+                    {% for v in versions %}<option value="v:{{ v.version_id }}">{{ v.label }}</option>{% endfor %}
+                </optgroup>
+                {% endif %}
+                {% if analyses %}
+                <optgroup label="Resume from a recent job match">
+                    {% for a in analyses %}<option value="jd:{{ a.jd_result_id }}">{{ a.file_name }} — {{ a.job_title or "Job match" }}</option>{% endfor %}
+                </optgroup>
+                {% endif %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="resume-file">Resume file</label>
+            <input type="file" id="resume-file" name="resume" accept=".pdf,.docx" aria-describedby="agent-resume-help">
+            <span class="field-hint" id="agent-resume-help">PDF or Word (.docx), up to 5 MB. Only needed for "Upload a new file".</span>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="form-step"><span class="num">3</span> A job (optional)</div>
+
+        {% if saved_jobs %}
+        <div class="field">
+            <label for="saved_job_id">Saved job</label>
+            <select class="input" id="saved_job_id" name="saved_job_id">
+                <option value="">None — paste below, or let the agent choose a role</option>
+                {% for job in saved_jobs %}<option value="{{ job.job_id }}">{{ job.title }}{% if job.company %} · {{ job.company }}{% endif %}</option>{% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="field">
+            <label for="job_title">Job title</label>
+            <input class="input" type="text" id="job_title" name="job_title" maxlength="200" placeholder="Junior Backend Developer">
+        </div>
+
+        <div class="field">
+            <label for="job_description">Job description</label>
+            <textarea class="input" id="job_description" name="job_description" rows="5" maxlength="20000"
+                      placeholder="Paste the job posting. Leave empty and the agent will use your target role or find the best-fitting role."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-robot" aria-hidden="true"></i> Run the agent</button>
+        <p class="muted small" style="margin-top: 8px;">Usually 20–60 seconds. You will see the agents working live.</p>
+
+    </form>
+
+    <div class="stack">
+
+        <section class="card" aria-labelledby="memory-title">
+            <div class="card-head">
+                <h2 id="memory-title"><i class="fa-solid fa-brain" aria-hidden="true"></i> What the agent remembers</h2>
+                {% if remembered %}
+                <form method="POST" action="/agent/memory/forget">
+                    {{ csrf_field() }}
+                    <button type="submit" class="btn btn-ghost btn-sm" data-confirm="Clear everything the agent remembers about you?">Clear all</button>
+                </form>
+                {% endif %}
+            </div>
+            {% if remembered %}
+            <ul class="list">
+                {% for key, value in remembered.items() %}
+                <li style="align-items: center;">
+                    <span style="flex: 1; min-width: 0;"><strong>{{ key|replace("_", " ")|capitalize }}</strong><br><span class="muted small">{{ value }}</span></span>
+                    <form method="POST" action="/agent/memory/forget">
+                        {{ csrf_field() }}
+                        <input type="hidden" name="key" value="{{ key }}">
+                        <button type="submit" class="btn btn-ghost btn-sm" aria-label="Forget {{ key }}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="muted small">Nothing yet. After a run, the agent remembers your target role, skills, gaps and goal, and uses them next time.</p>
+            {% endif %}
+        </section>
+
+        <section class="card" aria-labelledby="agents-title">
+            <div class="card-head"><h2 id="agents-title"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i> The specialist agents</h2></div>
+            <ul class="list">
+                {% for name, spec in specialists %}
+                <li><i class="fa-solid {{ spec.icon }}" style="color: var(--primary);" aria-hidden="true"></i>
+                    <span><strong>{{ spec.title }}</strong><br><span class="muted small">{{ spec.purpose }}</span></span></li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        {% if runs %}
+        <section class="card" aria-labelledby="runs-title">
+            <div class="card-head"><h2 id="runs-title"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent runs</h2></div>
+            <ul class="list">
+                {% for r in runs %}
+                <li style="align-items: center;">
+                    <span class="badge tint-{{ {'done': 'good', 'running': 'info', 'failed': 'low'}.get(r.status, 'info') }}">{{ r.status }}</span>
+                    <a href="/agent/run/{{ r.run_id }}" style="flex: 1; min-width: 0;">{{ r.goal|truncate(80) }}</a>
+                    <span class="muted small">{{ r.started_at.strftime("%d %b") if r.started_at else "" }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

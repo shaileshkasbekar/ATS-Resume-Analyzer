@@ -21,7 +21,7 @@ from database.run_sql import ALREADY_DONE_ERRORS, split_statements
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-FILES = ["schema.sql", "upgrade_v3.sql", "upgrade_v4.sql", "upgrade_v5.sql", "upgrade_v6.sql"]
+FILES = ["schema.sql", "upgrade_v3.sql", "upgrade_v4.sql", "upgrade_v5.sql", "upgrade_v6.sql", "upgrade_v7.sql"]
 
 DEFAULT_NAME = "ats_resume_analyzer_v2"
 

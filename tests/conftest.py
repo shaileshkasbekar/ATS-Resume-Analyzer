@@ -179,7 +179,7 @@ def test_db():
 
         cursor.execute(f"CREATE DATABASE {name}")
 
-        for path in ["database/schema.sql", "database/upgrade_v3.sql", "database/upgrade_v4.sql", "database/upgrade_v5.sql", "database/upgrade_v6.sql"]:
+        for path in ["database/schema.sql", "database/upgrade_v3.sql", "database/upgrade_v4.sql", "database/upgrade_v5.sql", "database/upgrade_v6.sql", "database/upgrade_v7.sql"]:
 
             sql = open(path, encoding="utf-8").read().replace("ats_resume_analyzer_v2", name)
 

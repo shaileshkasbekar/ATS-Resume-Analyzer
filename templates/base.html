@@ -83,6 +83,7 @@
             {{ nav_link("/upload", "fa-bullseye", "ATS Role Check", p == "/upload" or p.startswith("/history/ats")) }}
 
             <span class="nav-label">Career Tools</span>
+            {{ nav_link("/agent", "fa-robot", "Career Agent", p.startswith("/agent")) }}
             {{ nav_link("/roadmap", "fa-graduation-cap", "Learning Roadmap", p.startswith("/roadmap")) }}
             {{ nav_link("/pick/projects", "fa-lightbulb", "Project Ideas", p == "/pick/projects" or p.startswith("/projects")) }}
             {{ nav_link("/pick/interview", "fa-comments", "Mock Interview", p == "/pick/interview" or p.startswith("/interview")) }}
