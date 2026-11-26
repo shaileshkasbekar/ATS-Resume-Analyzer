@@ -30,6 +30,9 @@ def run(connect=None, log=print):
 
     name = Config.MYSQL_DATABASE
 
+    # Shown in the hosting logs, so a wrong database address is easy to spot
+    log(f"Database: connecting to {Config.MYSQL_HOST}:{Config.MYSQL_PORT} as {Config.MYSQL_USER}, database '{name}'")
+
     connection = (connect or mysql.connector.connect)(
         host=Config.MYSQL_HOST, port=Config.MYSQL_PORT,
         user=Config.MYSQL_USER, password=Config.MYSQL_PASSWORD

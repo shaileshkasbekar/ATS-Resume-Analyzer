@@ -56,3 +56,15 @@ def test_setup_creates_fresh_database_and_is_safe_to_rerun(monkeypatch):
     finally:
         admin.cursor().execute(f"DROP DATABASE IF EXISTS `{name}`")
         admin.close()
+
+
+def test_railway_style_variable_names_and_bad_reference(monkeypatch, capsys):
+    import config
+
+    monkeypatch.setenv("MYSQL_URL", "${{MySQL.MYSQL_URL}}")
+    assert config._mysql_from_url() == {}
+    assert "not a mysql:// address" in capsys.readouterr().out
+
+    monkeypatch.setenv("MYSQL_HOST", "")
+    monkeypatch.setenv("MYSQLHOST", "mysql.railway.internal")
+    assert config._setting("MYSQL_HOST", "localhost") == "mysql.railway.internal"
